@@ -39,7 +39,7 @@ src/
     pivotAxis.ts         ← 3D pivot axis from pivotAxisAngle + rake
     leanToSteer.ts       ← lean angle → steer angle via 3D axis rotation
     rotationAxisDist.ts  ← effective pivot axis distance to board surface
-    turningCenter.ts     ← ICR locus from front/rear steer angles + wheelbase
+    turningRadius.ts     ← ICR locus from front/rear steer angles + wheelbase
   physics/
     bushingModels.ts     ← parameterized stiffness curves per shape
     returnMoment.ts      ← combined bushing + gravitational return moment
@@ -54,11 +54,14 @@ src/
     SideView/            ← annotated SVG side cross-section of front truck
     FrontView/           ← annotated SVG front cross-section of front truck
     TopView/             ← top-down board SVG with ICR locus
+    DerivedParams/       ← computed parameter summary table (h_pendulum, ICR at 0°/90°)
     Charts/
       LeanVsSteerChart.tsx
       LeanVsReturnMomentChart.tsx
       SteeringMomentChart.tsx
       RotationAxisDistChart.tsx
+  persistence/
+    localStorage.ts      ← saveState / loadState with versioned key + fallback defaults
   App.tsx
   main.tsx
 ```
@@ -82,8 +85,10 @@ The truck geometry is defined by the following parameters (all positions relativ
 | Parameter | Symbol | Units | Description |
 |---|---|---|---|
 | Pivot axis angle | `α` | degrees | Angle of the pivot axis from horizontal in the XY plane (side view) |
-| Rake | `r` | mm | Perpendicular distance from axle center to the pivot axis line |
-| Axle-to-board distance | `d_board` | mm | Vertical distance from axle center up to the board mounting surface |
+| Rake | `r` | mm | Perpendicular distance from axle center to the pivot axis line. Positive values indicate forward direction |
+| Axle-to-Baseplate distance | `d_axle_baseplate` | mm | Vertical distance from axle center up to the truck's baseplate |
+| Baseplate-to-board distance | `d_baseplate_board` | mm | Vertical distance from the base plate up to the board top. Defined by board thickness and additional risers|
+
 | Wheel radius | `r_wheel` | mm | Radius of the wheel; defines ground plane at `y = -r_wheel` below axle |
 | Track width | `w_track` | mm | Lateral distance between the two wheel contact points (hanger width) |
 | Bushing moment arm | `d_bushing` | mm | Distance along the pivot axis from the axle plane to the bushing seat; defines mechanical advantage of bushing force on hanger rotation |
@@ -110,7 +115,7 @@ From these three parameters, the pivot axis is fully determined:
 
 - **Pivot axis unit vector:** `n̂ = (cos α, sin α, 0)` — lies in the forward-up (XY) plane
 - **Point on pivot axis (closest to axle):** `P_axis = r × n̂_perp` where `n̂_perp` is the unit vector perpendicular to `n̂` in the XY plane
-- **Board surface plane:** `y = d_board` (above axle center)
+- **Board surface plane:** `y = d_baseplate_board + d_axle_baseplate` (above axle center)
 
 The pivot axis line is then: `L(t) = P_axis + t × n̂`
 
@@ -127,7 +132,7 @@ This is computed exactly via 3D rotation matrices — no small-angle approximati
 
 ### Effective Rotation Axis Distance
 
-The perpendicular distance from the pivot axis line to the board surface plane `y = d_board`, as a function of lean angle `φ`. This describes how far the "virtual steering pivot" is from the board surface, affecting the steering feel.
+The perpendicular distance from the pivot axis line to the board surface plane `y = d_baseplate_board + d_axle_baseplate`, as a function of lean angle `φ`. This describes how far the "virtual steering pivot" is from the board surface, affecting the steering feel.
 
 ---
 
@@ -191,25 +196,25 @@ Where `d_eff(φ)` is the effective moment arm derived from the truck geometry (r
 │  Header: Longboard Truck Simulator                                          │
 ├─────────────┬───────────────────────────────────────────────────────────────┤
 │  Config     │  Diagrams Area                                                │
-│  Panel      │  ┌──────────────────────────────────┐  ┌────────────────┐    │
-│             │  │  Side View (XY)                  │  │ Front View (ZY)│    │
-│ [+ Add      │  │  board length → horizontal →     │  │ track width →  │    │
-│  Setup]     │  │  height → vertical               │  │ horizontal     │    │
-│             │  └──────────────────────────────────┘  │ height →       │    │
-│ Setup A 🔴  │  ┌──────────────────────────────────┐  │ vertical       │    │
-│  [sliders]  │  │  Top View (XZ)                   │  │                │    │
-│             │  │  board length → horizontal →     │  │                │    │
-│ Setup B 🔵  │  │  track width → vertical          │  └────────────────┘    │
-│  [sliders]  │  └──────────────────────────────────┘                        │
-│             │                                                               │
-│ Setup C 🟢  │  ┌──────────────────────┐  ┌──────────────────────┐          │
-│  [sliders]  │  │ Lean vs Steer        │  │ Lean vs Return       │          │
-│             │  │ Angle Chart          │  │ Moment Chart         │          │
-│ Rear Truck  │  └──────────────────────┘  └──────────────────────┘          │
-│  [sliders]  │  ┌──────────────────────┐  ┌──────────────────────┐          │
-│             │  │ Steering Moment vs   │  │ Rotation Axis        │          │
-│             │  │ Lateral Force Chart  │  │ Dist Chart           │          │
-│             │  └──────────────────────┘  └──────────────────────┘          │
+│  Panel      │  ┌──────────────────────────────────┐  ┌────────────────┐     │
+│             │  │  Side View (XY)                  │  │ Front View (ZY)│     │
+│ [+ Add      │  │  board length → horizontal →     │  │ track width →  │     │
+│  Setup]     │  │  height → vertical               │  │ horizontal     │     │
+│             │  └──────────────────────────────────┘  │ height →       │     │
+│ Setup A 🔴  │  ┌──────────────────────────────────┐  │ vertical       │     │
+│  [sliders]  │  │  Top View (XZ)                   │  ├────────────────┤     │
+│             │  │  board length → horizontal →     │  │ Derived Params │     │
+│ Setup B 🔵  │  │  track width → vertical          │  │ per setup:     │     │
+│  [sliders]  │  └──────────────────────────────────┘  │  h_pendulum    │     │
+│             │                                        └────────────────┘     │
+│ Setup C 🟢  │  ┌──────────────────────┐  ┌──────────────────────┐           │
+│  [sliders]  │  │ Lean vs Steer        │  │ Lean vs Return       │           │
+│             │  │ Angle Chart          │  │ Moment Chart         │           │
+│ Rear Truck  │  └──────────────────────┘  └──────────────────────┘           │
+│  [sliders]  │  ┌──────────────────────┐  ┌──────────────────────┐           │
+│             │  │ Steering Moment vs   │  │ Rotation Axis        │           │
+│             │  │ Lateral Force Chart  │  │ Dist Chart           │           │
+│             │  └──────────────────────┘  └──────────────────────┘           │
 └─────────────┴───────────────────────────────────────────────────────────────┘
 ```
 
@@ -218,9 +223,17 @@ Where `d_eff(φ)` is the effective moment arm derived from the truck geometry (r
 - Adjacent views share exactly one axis (one 90° rotation between neighbors):
   - Side View (XY) → Front View (ZY): shares **Y (vertical/height)** axis → both have height on the vertical screen axis
   - Side View (XY) → Top View (XZ): shares **X (forward/length)** axis → both have board length on the horizontal screen axis
-- Front View occupies the right column and the same row as Top View.
-- Keep the are right of Top view and below Front view empty.
-- Ensure that the scale of heights and widths match between Views, so that the board's geometry is consistent across all views. Also, ensure that height and width have the same scale.
+- Front View occupies the right column spanning both SVG rows; Derived Parameters panel fills the space below it.
+- Ensure that the scale of heights and widths match between Views, so that the board's geometry is geometrically consistent across all views; height and horizontal length use the same pixel-per-mm scale.
+
+**Derived Parameters panel** (bottom-right quadrant, below Front View):
+Displays computed values for each active setup as a color-coded table. Values are recomputed reactively when parameters change.
+
+| Derived Parameter | Formula | Notes |
+|---|---|---|
+| Inverted pendulum height | `h_pendulum = d_board + r_wheel` | Total board surface height above ground; lever arm for rider gravitational torque |
+| Lean-to-steer leverage at 0° | `dδ/dφ|_{φ=0}` (dimensionless °/°) | Linearized steering sensitivity at upright: degrees of steer per degree of lean; derived as the slope of the lean-to-steer curve at the origin via numerical differentiation of the full 3D rotation model |
+| Contact patch lateral rate at 0° | `d(z_contact)/dφ|_{φ=0}` (mm/°) | Rate at which the wheel contact patch moves sideways as the board leans from upright; combines the pure geometric lean effect (r_wheel × cos φ) with the rake-induced axle shift from hanger rotation |
 
 
 Each chart overlays all active setups as color-coded curves. SVG diagrams show the currently selected/highlighted setup.
@@ -269,7 +282,8 @@ Each chart overlays all active setups as color-coded curves. SVG diagrams show t
 - [ ] Implement `SideView` component — annotated 2D side cross-section showing pivot axis line, board surface, hanger, axle center (origin), pivot axis angle `α`, rake offset `r`, and wheel radius; board length horizontal, height vertical
 - [ ] Implement `FrontView` component — annotated 2D front cross-section showing track width horizontal, axle-to-board height vertical, wheel contact points, and bushing positions; height axis shared with SideView
 - [ ] Implement `TopView` component — top-down board diagram (XZ plane); board length horizontal and matched to SideView horizontal scale; track width vertical; shows board outline, both truck axles, and ICR locus color-coded by lean angle; multiple setups overlaid
-- [ ] Add dynamic geometry updates: all SVG diagrams redraw reactively when parameters change
+- [ ] Implement `DerivedParams` component — color-coded table in the bottom-right quadrant (below FrontView); displays per-setup: inverted pendulum height `h_pendulum = d_board + r_wheel`, ICR at 0° lean = "∞ (straight)", ICR at 90° lean `R_min`; updates reactively when parameters change
+- [ ] Add dynamic geometry updates: all SVG diagrams and the DerivedParams panel redraw reactively when parameters change
 - [ ] Add dimension annotations and labels (angles, distances) to all SVG views
 
 ### Phase 5: Chart Components
@@ -282,13 +296,22 @@ Each chart overlays all active setups as color-coded curves. SVG diagrams show t
 
 ### Phase 6: Config Panel & Multi-Setup Management
 
-- [ ] Implement `ConfigPanel` component — list of named setups with add/remove/rename actions
+**Setup lifecycle rules:**
+- The app always maintains at least one setup; the delete button is disabled (greyed out) when only one setup exists
+- New setups are created by **duplicating an existing setup** (the currently selected one) — there is no "create blank" option; this ensures users always start from a sensible baseline
+- Each setup has: a **rename field** (inline edit of the name), a **duplicate button** (creates a copy with a new auto-generated name and a new color), and a **delete button** (disabled when ≤1 setup)
+- On first app load (empty localStorage), a single default setup is created from a built-in preset
+
+- [ ] Implement `ConfigPanel` component — scrollable list of named setups; each row shows: color swatch, editable name, duplicate button, delete button (disabled when only 1 setup)
+- [ ] Implement setup duplication: clicking "Duplicate" on a setup creates a deep copy with a new auto-generated name (e.g. "Setup A copy") and a new auto-assigned color, appended to the list
+- [ ] Implement setup deletion: clicking "Delete" removes the setup from the list; the button is disabled when only 1 setup remains; confirm if more than 3 setups exist to prevent accidental deletion
 - [ ] Implement per-setup board-level parameter:
   - Wheelbase `L` (mm, e.g. 600–1000 mm)
 - [ ] Implement **front truck** parameter sliders (full set — drives all diagrams and charts):
   - Pivot axis angle `α` (degrees, e.g. 20°–65°)
   - Rake `r` (mm, perpendicular distance from axle center to pivot axis line)
-  - Axle-to-board distance `d_board` (mm, vertical distance from axle center to board surface)
+  - Axle-to-board distance `d_board_baseplate` (mm, vertical distance from board surface to truck baseplate surface)
+  - Axle-to-board distance `d_basplate_axle` (mm, vertical distance from truck baseplate surface to axle center)
   - Wheel radius `r_wheel` (mm, e.g. 60–120 mm)
   - Track width `w_track` (mm, e.g. 150–280 mm)
   - Bushing moment arm `d_bushing` (mm, distance along pivot axis from axle plane to bushing seat)
@@ -301,9 +324,11 @@ Each chart overlays all active setups as color-coded curves. SVG diagrams show t
 - [ ] Assign a distinct color to each setup automatically; display color swatch next to setup name
 - [ ] Add preset configurations (e.g., "Standard RKP 50°", "Standard TKP", "High-angle RKP 65°") as quick-load buttons
 
-### Phase 7: App Integration & Layout
+### Phase 7: App Integration, Layout & Persistence
 
 - [ ] Implement `App.tsx` — wire global state (setups list, rider params) to all components
+- [ ] Implement `src/persistence/localStorage.ts` — `saveState(state)` serializes the full app state (all setups + rider params) to `localStorage` under a versioned key; `loadState()` deserializes and validates on app start; handles missing/corrupt data by falling back to default values
+- [ ] Hook persistence into `App.tsx`: call `saveState` on every state change (via `useEffect`); call `loadState` on initial mount
 - [ ] Implement responsive two-column layout: config panel (left) + diagrams/charts (right)
 - [ ] Add tooltip/hover info on charts showing exact values per setup at the cursor position
 - [ ] Add a "highlight setup" interaction: clicking a setup in the config panel highlights its curves on all charts
