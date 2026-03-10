@@ -251,7 +251,7 @@ Each chart overlays all active setups as color-coded curves. SVG diagrams show t
 - [ ] Implement `src/math/vec3.ts` — Vec3 type and helpers: `dot`, `cross`, `normalize`, `scale`, `add`, `sub`
 - [ ] Implement `src/math/mat3.ts` — 3×3 rotation matrix from axis+angle (Rodrigues formula), matrix-vector multiply
 - [ ] Define `BoardSetupConfig` TypeScript interface: `frontTruck: TruckConfig`, `rearTruck: RearTruckConfig`, `wheelbase: number`
-- [ ] Define `TruckConfig` TypeScript interface (front truck, full detail) with all geometry parameters: `pivotAxisAngle`, `rake`, `axleToBoardDistance`, `wheelRadius`, `trackWidth`, `bushingMomentArm`, `roadsideBushing`, `boardsideBushing`
+- [ ] Define `TruckConfig` TypeScript interface (front truck, full detail) with all geometry parameters: `pivotAxisAngle`, `rake`, `axleToBoardDistance`, `wheelDiameter`, `trackWidth`, `bushingMomentArm`, `roadsideBushing`, `boardsideBushing`
 - [ ] Define `RearTruckConfig` TypeScript interface (rear truck, minimal — only `pivotAxisAngle` and `rake` needed for ICR computation)
 - [ ] Define `BushingConfig` TypeScript interface: `shape`, `durometer`, `height`
 
