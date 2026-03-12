@@ -27,7 +27,7 @@ import type { BushingConfig } from '../models/BushingConfig'
  * approximately 30° of hanger rotation.
  * @units N·mm / degree
  */
-const K_BARREL_REFERENCE = 0.1 // N·mm per degree at 90A
+const K_BARREL_REFERENCE = 0.3 // N·mm per degree at 90A
 
 /**
  * Reference base stiffness at 90A durometer for a standard cone bushing.
@@ -35,7 +35,7 @@ const K_BARREL_REFERENCE = 0.1 // N·mm per degree at 90A
  * but catches up quickly due to progressive stiffening.
  * @units N·mm / degree
  */
-const K_CONE_REFERENCE = 0.85 // N·mm per degree at 90A (base)
+const K_CONE_REFERENCE = 0.3 // N·mm per degree at 90A (base)
 
 /**
  * Cubic progression coefficient for cone bushings.
@@ -142,9 +142,10 @@ export function bushingTorque(config: BushingConfig, angleDeg: number): number {
   } 
   else
   {
-    const coneWidthRatio = 0.01 //the width ratio of cone's narrow and wide end'
-    const coneVolumeRatio = (coneWidthRatio*coneWidthRatio+1)/2/Math.sqrt(2)
-    const cone_nonlinearity = coneVolumeRatio * (coneWidthRatio + (1-coneWidthRatio) * Math.abs(θ)/maxAngle)
+    const angle_ratio = Math.abs(θ)/30.0
+    const coneWidthRatio = 0.3 //the width ratio of cone's narrow and wide end'
+    //const coneVolumeRatio = (coneWidthRatio*coneWidthRatio+1)/2/Math.sqrt(2)
+    const cone_nonlinearity = (coneWidthRatio + (1-coneWidthRatio) * angle_ratio)
     baseTorque = (25.4/4.0) * k * θ * (1 + CONE_CUBIC_COEFFICIENT *  θ * θ) * cone_nonlinearity 
   }
 

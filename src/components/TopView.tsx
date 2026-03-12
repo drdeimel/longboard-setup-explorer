@@ -23,7 +23,7 @@ import { computePivotAxis } from '../geometry/pivotAxis'
 import { returnKeyGeometryCurves, type KeyGeometryResult } from '../physics/keyGeometryDataSet'
 
 /** Props for the TopView component. */
-interface TopViewProps {320
+interface TopViewProps {
   /** All active board setups to display (overlaid). */
   setups: BoardSetupConfig[]
   /** ID of the currently highlighted/active setup. */

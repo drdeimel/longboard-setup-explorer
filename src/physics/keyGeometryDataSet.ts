@@ -124,6 +124,7 @@ export interface KeyGeometryResult {
  * @param rearPivotAxisAngleDeg - Rear truck pivot axis angle (degrees).
  * @param rearRake              - Rear truck rake (mm).
  * @param wheelbase             - Distance between front and rear axles (mm).
+ * @param precomputed           - Pre-computed lean-invariant values (optional, computed if not provided).
  * @returns Return moment breakdown at the given lean angle.
  */
 export function computeKeyGeometry(
@@ -140,7 +141,18 @@ export function computeKeyGeometry(
   rearPivotAxisAngleDeg: number,
   rearRake: number,
   wheelbase: number,
+  precomputed?: {
+    pivotAxisAngleRad: number
+    invPendulumHeight: number
+    riderForce: number
+  },
 ): KeyGeometryResult {
+  // Use precomputed values if provided, otherwise compute
+  const pivotAxisAngleRad = precomputed?.pivotAxisAngleRad ?? (pivotAxisAngleDeg * Math.PI / 180)
+  const invPendulumHeight = precomputed?.invPendulumHeight ?? 
+    (axleToBaseplateDistance + baseplateToBoard - rake / Math.cos(pivotAxisAngleRad))
+  const riderForce = precomputed?.riderForce ?? (riderMassKg * G)
+
   // Get hanger rotation from lean angle
   const lts: LeanToSteerResult = computeLeanToSteer(pivotAxisDirection, leanAngleDeg)
   const { hangerRotationDeg } = lts
@@ -153,7 +165,6 @@ export function computeKeyGeometry(
   )
 
   const leanRad = (leanAngleDeg * Math.PI) / 180
-  const pivotAxisAngleRad = pivotAxisAngleDeg * Math.PI / 180
   const rotationAxisDist = computeRotationAxisDist(
     pivotAxisAngleDeg,
     rake,
@@ -165,10 +176,8 @@ export function computeKeyGeometry(
   //compute the effective rotation center height, i.e. the place where pivot and the hanger's vertical rotation axis intersect
   //This is measured from the axle (Y=0), not from ground
   //Positive rake moves the effective rotation center UP from the axle
-  const invPendulumHeight = axleToBaseplateDistance + baseplateToBoard - rake / Math.cos(pivotAxisAngleRad)
+  // Note: invPendulumHeight is now precomputed or computed once above
 
-
-  const riderForce = riderMassKg * G
   const centerOfBoardZ = invPendulumHeight * Math.sin(leanRad)
   const centerOfBoardY = invPendulumHeight * Math.cos(leanRad)
   const centerOfForceZ =  -bushingTorqueNm * (1000 / riderForce)
@@ -254,6 +263,17 @@ export function returnKeyGeometryCurves(
 ): KeyGeometryResult[] {
   const results: KeyGeometryResult[] = []
   const step = (maxLeanDeg - minLeanDeg) / (numSamples - 1)
+
+  // Pre-compute lean-invariant values once
+  const pivotAxisAngleRad = pivotAxisAngleDeg * Math.PI / 180
+  const invPendulumHeight = axleToBaseplateDistance + baseplateToBoard - rake / Math.cos(pivotAxisAngleRad)
+  const riderForce = riderMassKg * G
+  const precomputed = {
+    pivotAxisAngleRad,
+    invPendulumHeight,
+    riderForce,
+  }
+
   for (let i = 0; i < numSamples; i++) {
     const lean = minLeanDeg + i * step
     results.push(
@@ -271,6 +291,7 @@ export function returnKeyGeometryCurves(
         rearPivotAxisAngleDeg,
         rearRake,
         wheelbase,
+        precomputed,
       ),
     )
   }

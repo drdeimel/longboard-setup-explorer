@@ -98,31 +98,35 @@ const LeanVsBushingTorqueChart: React.FC<LeanVsBushingTorqueChartProps> = ({
   }, [setups, riderMassKg, comHeightM, numSamples, activeSetupId, keyGeometryCurves])
 
   // Derive x-axis range from the keyGeometryCurves payload, falling back to DEFAULT_MAX_LEAN.
-  const axisMaxLean = keyGeometryCurves?.[0]?.maxLeanDeg ?? DEFAULT_MAX_LEAN
+  const axisMaxLean = DEFAULT_MAX_LEAN
+  // Y-axis range: ±(riderWeight * boardWidth / 2) in Nm
+  const riderWeightN = riderMassKg * 9.81
+  const yAxisMax = (riderWeightN * 235 / 2) / 1000 // convert N·mm to Nm
 
   return (
     <Plot
       data={traces}
       layout={{
         title: {
-          text: 'Lean vs Bushing Torque',
+          text: 'Bushing Torque',
           font: { color: '#94a3b8', size: 13 },
         },
         paper_bgcolor: '#0f172a',
         plot_bgcolor: '#0f172a',
         font: { color: '#94a3b8', size: 11 },
         xaxis: {
-          title: { text: 'Lean Angle (°)', font: { size: 11 } },
+          title: { text: 'Lean [°]', font: { size: 11 } },
           gridcolor: '#1e293b',
           zerolinecolor: '#334155',
           color: '#64748b',
           range: [-axisMaxLean, axisMaxLean],
         },
         yaxis: {
-          title: { text: 'Bushing Torque (N·m)', font: { size: 11 } },
+          title: { text: 'Bushing Torque [Nm]', font: { size: 11 } },
           gridcolor: '#1e293b',
           zerolinecolor: '#334155',
           color: '#64748b',
+          range: [-yAxisMax, yAxisMax],
         },
         legend: {
           bgcolor: 'transparent',

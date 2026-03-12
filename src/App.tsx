@@ -14,7 +14,7 @@
  * Layout: responsive two-column (config panel left, diagrams right).
  */
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import type { BoardSetupConfig } from './models/BoardSetupConfig'
 import { DEFAULT_MAX_LEAN } from './models/BoardSetupConfig'
 import ConfigPanel, {
@@ -117,14 +117,28 @@ const App: React.FC = () => {
     initial.steeringLeanAngleDeg,
   )
 
-  // ── Persistence: save on every state change ──────────────────────────────
+  // ── Persistence: save to localStorage (debounced to avoid blocking on slider changes) ──
+  const saveTimerRef = useRef<number | null>(null)
+
   useEffect(() => {
-    saveState({ setups, riderParams, activeSetupId, steeringLeanAngleDeg })
+    // Debounce saves by 300ms to avoid blocking UI during slider interactions
+    if (saveTimerRef.current) {
+      clearTimeout(saveTimerRef.current)
+    }
+    saveTimerRef.current = window.setTimeout(() => {
+      saveState({ setups, riderParams, activeSetupId, steeringLeanAngleDeg })
+    }, 2000)
+
+    return () => {
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current)
+      }
+    }
   }, [setups, activeSetupId, riderParams, steeringLeanAngleDeg])
 
   // ── Derived ───────────────────────────────────────────────────────────────
   const activeSetup = setups.find(s => s.id === activeSetupId) ?? setups[0]
-  const sharedPpm = computeSharedScale(activeSetup, 260)
+  const sharedPpm = computeSharedScale(activeSetup, 280)
 
   // ── Key Geometry Curves (computed once per setup when config changes) ───────
   const DEFAULT_SAMPLES = 91
@@ -249,42 +263,42 @@ const App: React.FC = () => {
 
         {/* ── Right: Diagrams + Charts ── */}
         <main className="flex-1 overflow-y-auto p-4 space-y-4">
-          {/* Row 1: SVG diagrams */}
-          <div className="grid grid-cols-4 gap-1">
-            {/* Side View (wide - 3/4) */}
-            <div className="col-span-3 w-full">
+          {/* Row 1: All three SVG diagrams in a single row */}
+          <div className="grid grid-cols-5 gap-1">
+            {/* Side View */}
+            <div className="col-span-2 w-full">
               <SideView
                 truck={activeSetup.frontTruck}
                 color={activeSetup.color}
-                width={620}
-                height={260}
+                width={500}
+                height={280}
                 pixelsPerMm={sharedPpm}
               />
             </div>
 
-            {/* Front View (right column - 1/4) */}
-            <div className="w-full">
+            {/* Top View (ICR locus) */}
+            <div className="col-span-2 w-full">
+              <TopView
+                setups={setups}
+                activeSetupId={activeSetupId}
+                width={350}
+                height={280}
+                keyGeometryCurves={keyGeometryCurves}
+              />
+            </div>
+
+            {/* Front View */}
+            <div className="col-span-1 w-full">
               <FrontView
                 truck={activeSetup.frontTruck}
                 color={activeSetup.color}
-                width={320}
-                height={260}
+                width={400}
+                height={280}
                 pixelsPerMm={sharedPpm}
                 keyGeometryCurves={keyGeometryCurves}
                 leanAngleDeg={steeringLeanAngleDeg}
               />
             </div>
-          </div>
-
-          {/* Row 1b: Top View (ICR locus) */}
-          <div className="w-full">
-            <TopView
-              setups={setups}
-              activeSetupId={activeSetupId}
-              width={720}
-              height={260}
-              keyGeometryCurves={keyGeometryCurves}
-            />
           </div>
 
           {/* Row 2: Charts grid */}

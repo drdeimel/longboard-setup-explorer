@@ -88,7 +88,7 @@ const LeanVsCentripetalAxisChart: React.FC<LeanVsCentripetalAxisChartProps> = ({
 
       allTraces.push({
         x: filtered.map(r => r.leanAngleDeg),
-        y: filtered.map(r => r.turningCenterX as number),
+        y: filtered.map(r => -r.turningCenterX as number),
         type: 'scatter' as const,
         mode: 'lines' as const,
         name: setup.name,
@@ -109,30 +109,32 @@ const LeanVsCentripetalAxisChart: React.FC<LeanVsCentripetalAxisChartProps> = ({
 
   // Derive x-axis range from the keyGeometryCurves payload, falling back to DEFAULT_MAX_LEAN.
   const axisMaxLean = keyGeometryCurves?.[0]?.maxLeanDeg ?? DEFAULT_MAX_LEAN
+  const wheelbase = setups[0]?.wheelbase ?? 600 // default fallback
 
   return (
     <Plot
       data={traces}
       layout={{
         title: {
-          text: 'Lean vs Centripetal Axis (ICR X)',
+          text: 'Center of Stiffness',
           font: { color: '#94a3b8', size: 13 },
         },
         paper_bgcolor: '#0f172a',
         plot_bgcolor: '#0f172a',
         font: { color: '#94a3b8', size: 11 },
         xaxis: {
-          title: { text: 'Lean Angle (°)', font: { size: 11 } },
+          title: { text: 'Lean Angle [°]', font: { size: 11 } },
           gridcolor: '#1e293b',
           zerolinecolor: '#334155',
           color: '#64748b',
           range: [-axisMaxLean, axisMaxLean],
         },
         yaxis: {
-          title: { text: 'ICR X Position (mm)', font: { size: 11 } },
+          title: { text: 'Behind Front truck [mm]', font: { size: 11 } },
           gridcolor: '#1e293b',
           zerolinecolor: '#334155',
           color: '#64748b',
+          range: [-wheelbase, 0],
         },
         legend: {
           bgcolor: 'transparent',

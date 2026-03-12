@@ -99,21 +99,21 @@ const LeanVsSteerChart: React.FC<LeanVsSteerChartProps> = ({
       data={traces}
       layout={{
         title: {
-          text: 'Lean vs Steer Angle',
+          text: 'Turn per Lean °/°',
           font: { color: '#94a3b8', size: 13 },
         },
         paper_bgcolor: '#0f172a',
         plot_bgcolor: '#0f172a',
         font: { color: '#94a3b8', size: 11 },
         xaxis: {
-          title: { text: 'Lean Angle (°)', font: { size: 11 } },
+          title: { text: 'Lean [°])', font: { size: 11 } },
           gridcolor: '#1e293b',
           zerolinecolor: '#334155',
           color: '#64748b',
           range: [-axisMaxLean, axisMaxLean],
         },
         yaxis: {
-          title: { text: 'Steer Angle (°)', font: { size: 11 } },
+          title: { text: 'Turn [°]', font: { size: 11 } },
           gridcolor: '#1e293b',
           zerolinecolor: '#334155',
           color: '#64748b',
