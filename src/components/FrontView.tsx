@@ -39,6 +39,11 @@ interface FrontViewProps {
    * consistency across views (shared Y axis → shared vertical scale).
    */
   pixelsPerMm?: number
+  /**
+   * Ground offset from the bottom of the SVG in pixels.
+   * When provided, ensures the floor line aligns with SideView for consistent visuals.
+   */
+  groundOffsetPx?: number
   /** Pre-computed key geometry curves from parent (maxLeanDeg is the global DEFAULT_MAX_LEAN). */
   keyGeometryCurves?: { setupId: string; maxLeanDeg: number; curve: KeyGeometryResult[] }[]
   /** Board lean angle for tilting the board visualization (degrees). */
@@ -60,6 +65,7 @@ const FrontView: React.FC<FrontViewProps> = ({
   width = DEFAULT_WIDTH,
   height = DEFAULT_HEIGHT,
   pixelsPerMm,
+  groundOffsetPx = 20,
   keyGeometryCurves,
   leanAngleDeg = 0,
 }) => {
@@ -78,7 +84,8 @@ const FrontView: React.FC<FrontViewProps> = ({
 
   // SVG origin: axle center
   const originX = width / 2
-  const originY = height - 20 - truck.wheelDiameter / 2 * ppm
+  // Use groundOffsetPx to ensure alignment with SideView
+  const originY = height - groundOffsetPx - truck.wheelDiameter / 2 * ppm
 
   /** Convert physics (Z, Y) to SVG pixels. Z is horizontal (+ = right), Y is vertical (+ = up). */
   const toSVG = (physZ: number, physY: number): [number, number] => [

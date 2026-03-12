@@ -37,6 +37,11 @@ interface SideViewProps {
    * and TopView to maintain geometric consistency across views.
    */
   pixelsPerMm?: number
+  /**
+   * Ground offset from the bottom of the SVG in pixels.
+   * When provided, ensures the floor line aligns with FrontView for consistent visuals.
+   */
+  groundOffsetPx?: number
 }
 
 /** Default SVG dimensions. */
@@ -55,6 +60,7 @@ const SideView: React.FC<SideViewProps> = ({
   width = DEFAULT_WIDTH,
   height = DEFAULT_HEIGHT,
   pixelsPerMm,
+  groundOffsetPx = 20,
 }) => {
   const dBoard = boardSurfaceHeight(truck.axleToBaseplateDistance, truck.baseplateToBoard)
   const { direction: axisDir, point: axisPoint } = computePivotAxis(
@@ -77,7 +83,8 @@ const SideView: React.FC<SideViewProps> = ({
   // allows the ground and board to both be visible
   const originX = width / 2
   // Position axle center such that ground is at bottom and board near top
-  const originY = height - 20 - truck.wheelDiameter / 2 * ppm
+  // Use groundOffsetPx to ensure alignment with FrontView
+  const originY = height - groundOffsetPx - truck.wheelDiameter / 2 * ppm
 
   /** Convert physics (X, Y) to SVG (px, py). Y is flipped (SVG y increases downward). */
   const toSVG = (physX: number, physY: number): [number, number] => [

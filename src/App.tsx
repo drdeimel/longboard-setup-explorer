@@ -90,14 +90,20 @@ function buildInitialState(): {
  * into the SVG diagram area. All three SVG views (Side, Front, Top) use this
  * same scale to maintain geometric consistency across views.
  *
+ * The scale is computed based on the vertical space needed to show:
+ * - Ground (at -wheelRadius)
+ * - Board surface (at dBoard)
+ * Plus margins.
+ *
  * @param setup - The active board setup.
- * @param sideViewHeight - Available pixel height for the SideView.
+ * @param availableHeight - Available pixel height for the view.
  * @returns Shared pixels-per-mm scale.
  */
-function computeSharedScale(setup: BoardSetupConfig, sideViewHeight: number): number {
+function computeSharedScale(setup: BoardSetupConfig, availableHeight: number): number {
   const truck = setup.frontTruck
-  const totalHeightMm = truck.axleToBaseplateDistance + truck.baseplateToBoard + truck.wheelDiameter / 2 + 30
-  return Math.max(0.5, Math.min(3.0, (sideViewHeight - 60) / totalHeightMm))
+  const dBoard = truck.baseplateToBoard + truck.axleToBaseplateDistance
+  const totalHeightMm = dBoard + truck.wheelDiameter / 2 + 30 // 30mm margin
+  return Math.max(0.3, Math.min(2.5, (availableHeight - 50) / totalHeightMm))
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -116,6 +122,7 @@ const App: React.FC = () => {
   const [steeringLeanAngleDeg, setSteeringLeanAngleDeg] = useState<number>(
     initial.steeringLeanAngleDeg,
   )
+  const [topViewCollapsed, setTopViewCollapsed] = useState<boolean>(false)
 
   // ── Persistence: save to localStorage (debounced to avoid blocking on slider changes) ──
   const saveTimerRef = useRef<number | null>(null)
@@ -263,38 +270,54 @@ const App: React.FC = () => {
 
         {/* ── Right: Diagrams + Charts ── */}
         <main className="flex-1 overflow-y-auto p-4 space-y-4">
-          {/* Row 1: All three SVG diagrams in a single row */}
-          <div className="grid grid-cols-5 gap-1">
+          {/* Header row with collapse toggle */}
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-medium text-gray-400 ml-1">Truck Diagrams</h2>
+            <button
+              onClick={() => setTopViewCollapsed(!topViewCollapsed)}
+              className="text-xs px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-gray-200 transition-colors"
+              title={topViewCollapsed ? 'Show Top View (ICR)' : 'Hide Top View'}
+            >
+              {topViewCollapsed ? 'Show ICR ▶' : 'Hide ICR ▼'}
+            </button>
+          </div>
+
+          {/* Row 1: SVG diagrams - Side and Front views with optional TopView */}
+          <div className={`grid gap-1 ${topViewCollapsed ? 'grid-cols-3' : 'grid-cols-5'}`}>
             {/* Side View */}
-            <div className="col-span-2 w-full">
+            <div className={topViewCollapsed ? 'col-span-1' : 'col-span-2'}>
               <SideView
                 truck={activeSetup.frontTruck}
                 color={activeSetup.color}
-                width={500}
+                width={topViewCollapsed ? 500 : 500}
                 height={280}
                 pixelsPerMm={sharedPpm}
+                groundOffsetPx={20}
               />
             </div>
 
-            {/* Top View (ICR locus) */}
-            <div className="col-span-2 w-full">
-              <TopView
-                setups={setups}
-                activeSetupId={activeSetupId}
-                width={350}
-                height={280}
-                keyGeometryCurves={keyGeometryCurves}
-              />
-            </div>
+            {/* Top View (ICR locus) - collapsible */}
+            {!topViewCollapsed && (
+              <div className="col-span-2 w-full">
+                <TopView
+                  setups={setups}
+                  activeSetupId={activeSetupId}
+                  width={350}
+                  height={280}
+                  keyGeometryCurves={keyGeometryCurves}
+                />
+              </div>
+            )}
 
             {/* Front View */}
-            <div className="col-span-1 w-full">
+            <div className={topViewCollapsed ? 'col-span-2' : 'col-span-1'}>
               <FrontView
                 truck={activeSetup.frontTruck}
                 color={activeSetup.color}
-                width={400}
+                width={topViewCollapsed ? 500 : 400}
                 height={280}
                 pixelsPerMm={sharedPpm}
+                groundOffsetPx={20}
                 keyGeometryCurves={keyGeometryCurves}
                 leanAngleDeg={steeringLeanAngleDeg}
               />
