@@ -19,7 +19,7 @@
  * - Axle-to-board height annotation
  */
 
-import React from 'react'
+import React, { useState } from 'react'
 import type { TruckConfig } from '../models/TruckConfig'
 import { boardSurfaceHeight } from '../geometry/pivotAxis'
 import type { KeyGeometryResult } from '../physics/keyGeometryDataSet'
@@ -48,6 +48,8 @@ interface FrontViewProps {
   keyGeometryCurves?: { setupId: string; maxLeanDeg: number; curve: KeyGeometryResult[] }[]
   /** Board lean angle for tilting the board visualization (degrees). */
   leanAngleDeg?: number
+  /** Callback when user drags the board point to change lean angle. */
+  onLeanAngleChange?: (leanAngleDeg: number) => void
 }
 
 const DEFAULT_WIDTH = 500
@@ -68,7 +70,10 @@ const FrontView: React.FC<FrontViewProps> = ({
   groundOffsetPx = 20,
   keyGeometryCurves,
   leanAngleDeg = 0,
+  onLeanAngleChange,
 }) => {
+  const [isDragging, setIsDragging] = useState(false)
+
   const dBoard = boardSurfaceHeight(truck.axleToBaseplateDistance, truck.baseplateToBoard)
 
   // Geometry extents (in mm)
@@ -161,8 +166,33 @@ const FrontView: React.FC<FrontViewProps> = ({
       width="100%"
       height={height}
       viewBox={`0 0 ${width} ${height}`}
-      className="block"
+      className={`block ${isDragging ? 'cursor-grabbing' : ''}`}
       aria-label="Front view cross-section (ZY plane)"
+      onMouseMove={(e) => {
+        if (!isDragging || !onLeanAngleChange) return
+
+        // Get mouse position relative to SVG
+        const svgRect = e.currentTarget.getBoundingClientRect()
+        const mouseX = e.clientX - svgRect.left
+        const mouseY = e.clientY - svgRect.top
+
+        // Calculate angle from rotation center to mouse position
+        // In SVG coordinates: X increases right, Y increases down
+        const dx = mouseX - rotCenterXSvg
+        const dy = mouseY - rotCenterYSvg
+
+        // Calculate lean angle: atan2(dx, -dy) gives angle from vertical
+        // -dy because in SVG Y is positive downward, but physics Y is positive upward
+        let leanAngleRad = Math.atan2(dx, -dy)
+        let leanAngleDeg = (leanAngleRad * 180) / Math.PI
+
+        // Clamp to reasonable range (-45 to 45 degrees)
+        leanAngleDeg = Math.max(-45, Math.min(45, leanAngleDeg))
+
+        onLeanAngleChange(leanAngleDeg)
+      }}
+      onMouseUp={() => setIsDragging(false)}
+      onMouseLeave={() => setIsDragging(false)}
     >
       {/* Background */}
       <rect width={width} height={height} fill="#0f172a" rx={4} />
@@ -241,7 +271,23 @@ const FrontView: React.FC<FrontViewProps> = ({
           stroke="#334155"
           strokeWidth={20}
         />
-        <circle cx={boardCenterXSvg} cy={boardCenterYSvg} r={4} fill={color} stroke="#fff" strokeWidth={1} />
+        {/* Draggable board center point - drag to set lean angle */}
+        <circle
+          cx={boardCenterXSvg}
+          cy={boardCenterYSvg}
+          r={8}
+          fill={color}
+          fillOpacity={isDragging ? 0.5 : 0.3}
+          stroke="#fff"
+          strokeWidth={1.5}
+          className="cursor-grab"
+          style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+          onMouseDown={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            setIsDragging(true)
+          }}
+        />
         <circle cx={centerForceXSvg} cy={centerForceYSvg} r={4} fill={color} stroke="#f59e0b" strokeWidth={1} />
         <text
           x={boardEndX + 4}

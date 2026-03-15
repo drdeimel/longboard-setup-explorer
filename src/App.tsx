@@ -320,6 +320,7 @@ const App: React.FC = () => {
                 groundOffsetPx={20}
                 keyGeometryCurves={keyGeometryCurves}
                 leanAngleDeg={steeringLeanAngleDeg}
+                onLeanAngleChange={setSteeringLeanAngleDeg}
               />
             </div>
           </div>
