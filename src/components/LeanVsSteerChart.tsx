@@ -106,7 +106,7 @@ const LeanVsSteerChart: React.FC<LeanVsSteerChartProps> = ({
         plot_bgcolor: '#0f172a',
         font: { color: '#94a3b8', size: 11 },
         xaxis: {
-          title: { text: 'Lean [°])', font: { size: 11 } },
+          title: { text: 'Lean [°]', font: { size: 11 } },
           gridcolor: '#1e293b',
           zerolinecolor: '#334155',
           color: '#64748b',
