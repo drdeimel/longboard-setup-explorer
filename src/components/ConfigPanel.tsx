@@ -130,7 +130,7 @@ interface SliderRowProps {
  */
 const SliderRow: React.FC<SliderRowProps> = ({ label, value, min, max, step, unit, onChange }) => (
   <div className="flex items-center gap-2 py-1">
-    <label className="text-slate-400 text-xs w-36 flex-shrink-0">{label}</label>
+    <label className="text-slate-300 text-xs w-36 flex-shrink-0">{label}</label>
     <input
       type="range"
       min={min}
@@ -147,7 +147,7 @@ const SliderRow: React.FC<SliderRowProps> = ({ label, value, min, max, step, uni
       max={max}
       step={step}
       value={value}
-      className="text-slate-300 text-xs w-16 text-right flex-shrink-0 font-mono bg-transparent border border-slate-700 rounded px-1 py-0.5 focus:border-slate-500 focus:outline-none"
+      className="text-slate-200 text-xs w-16 text-right flex-shrink-0 font-mono bg-transparent border border-slate-700 rounded px-1 py-0.5 focus:border-slate-500 focus:outline-none"
       onChange={e => {
         const num = Number(e.target.value)
         if (!isNaN(num) && num >= min && num <= max) {
@@ -155,7 +155,7 @@ const SliderRow: React.FC<SliderRowProps> = ({ label, value, min, max, step, uni
         }
       }}
     />
-    <span className="text-slate-500 text-xs w-6 flex-shrink-0">
+    <span className="text-slate-300 text-xs w-6 flex-shrink-0">
       {unit ?? ''}
     </span>
   </div>
@@ -173,10 +173,10 @@ interface SelectRowProps {
  */
 const SelectRow: React.FC<SelectRowProps> = ({ label, value, options, onChange }) => (
   <div className="flex items-center gap-2 py-1">
-    <label className="text-slate-400 text-xs w-36 flex-shrink-0">{label}</label>
+    <label className="text-slate-300 text-xs w-36 flex-shrink-0">{label}</label>
     <select
       value={value}
-      className="flex-1 bg-slate-800 border border-slate-700 rounded text-slate-300 text-xs px-2 py-1 min-w-0"
+      className="flex-1 bg-slate-800 border border-slate-700 rounded text-slate-200 text-xs px-2 py-1 min-w-0"
       onChange={e => onChange(e.target.value)}
     >
       {options.map(o => (
@@ -200,7 +200,7 @@ interface BushingEditorProps {
  */
 const BushingEditor: React.FC<BushingEditorProps> = ({ label, bushing, onChange }) => (
   <div className="mb-1">
-    <p className="text-slate-500 text-xs font-medium mb-1">{label}</p>
+    <p className="text-slate-300 text-xs font-medium mb-1">{label}</p>
     <SelectRow
       label="  Shape"
       value={bushing.shape}
@@ -342,7 +342,7 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
       <div className="flex-1 overflow-y-auto">
         {/* ── Presets ── */}
         <div className="px-3 py-3 border-b border-slate-800">
-          <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Load Preset</p>
+          <p className="text-xs text-slate-300 uppercase tracking-wide mb-2">Load Preset</p>
           <div className="flex flex-wrap gap-2">
             {PRESETS.map(preset => (
               <button
@@ -358,7 +358,7 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
 
         {/* ── Setup List ── */}
         <div className="px-3 py-3 border-b border-slate-800">
-          <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Setups</p>
+          <p className="text-xs text-slate-300 uppercase tracking-wide mb-2">Setups</p>
           <div className="space-y-1">
             {setups.map(setup => {
               const isExpanded = expandedSetupId === setup.id
@@ -395,7 +395,7 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
                     />
                     {/* Expand/collapse toggle */}
                     <button
-                      className="text-slate-500 hover:text-slate-300 text-xs px-1"
+                      className="text-slate-300 hover:text-white text-xs px-1"
                       onClick={() => {
                         onActiveSetupChange(setup.id)
                         setExpandedSetupId(isExpanded ? null : setup.id)
@@ -406,7 +406,7 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
                     </button>
                     {/* Duplicate */}
                     <button
-                      className="text-slate-500 hover:text-blue-400 text-xs px-1 transition-colors"
+                      className="text-slate-300 hover:text-blue-300 text-xs px-1 transition-colors"
                       onClick={() => onSetupDuplicate(setup.id)}
                       title="Duplicate this setup"
                     >
@@ -417,7 +417,7 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
                       className={`text-xs px-1 transition-colors ${
                         setups.length <= 1
                           ? 'text-slate-700 cursor-not-allowed'
-                          : 'text-slate-500 hover:text-red-400'
+                          : 'text-slate-300 hover:text-red-300'
                       }`}
                       onClick={() => handleDelete(setup.id)}
                       disabled={setups.length <= 1}
@@ -435,7 +435,7 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
                   {isExpanded && (
                     <div className="px-3 pb-3 border-t border-slate-800">
                       {/* Front truck geometry */}
-                      <p className="text-slate-500 text-xs font-medium mt-3 mb-1">
+                      <p className="text-slate-300 text-xs font-medium mt-3 mb-1">
                         Front Truck — Geometry
                       </p>
                       <SliderRow
@@ -503,7 +503,7 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
                       />
 
                       {/* Front truck bushings */}
-                      <p className="text-slate-500 text-xs font-medium mt-3 mb-1">
+                      <p className="text-slate-300 text-xs font-medium mt-3 mb-1">
                         Front Truck — Bushings
                       </p>
                       <BushingEditor
@@ -518,7 +518,7 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
                       />
 
                       {/* Rear truck */}
-                      <p className="text-slate-500 text-xs font-medium mt-3 mb-1">
+                      <p className="text-slate-300 text-xs font-medium mt-3 mb-1">
                         Rear Truck
                       </p>
                       <SliderRow
@@ -558,7 +558,7 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
 
         {/* ── Global Rider Parameters ── */}
         <div className="px-3 py-3 border-b border-slate-800">
-          <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Rider (Global)</p>
+          <p className="text-xs text-slate-300 uppercase tracking-wide mb-2">Rider (Global)</p>
           <SliderRow
             label="Mass"
             value={riderParams.massKg}
@@ -582,7 +582,7 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
 
         {/* ── Chart Controls ── */}
         <div className="px-3 py-3">
-          <p className="text-xs text-slate-500 uppercase tracking-wide mb-2">Chart Controls</p>
+          <p className="text-xs text-slate-300 uppercase tracking-wide mb-2">Chart Controls</p>
           <SliderRow
             label="Steering chart lean"
             value={steeringLeanAngleDeg}

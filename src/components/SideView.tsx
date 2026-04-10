@@ -21,6 +21,7 @@
 import React from 'react'
 import type { TruckConfig } from '../models/TruckConfig'
 import { computePivotAxis, boardSurfaceHeight } from '../geometry/pivotAxis'
+import { UI_TEXT_MUTED, UI_TEXT_PRIMARY, UI_TEXT_SECONDARY } from '../theme/uiColors'
 
 /** Props for the SideView component. */
 interface SideViewProps {
@@ -197,7 +198,7 @@ const SideView: React.FC<SideViewProps> = ({
       <rect width={width} height={height} fill="#0f172a" rx={4} />
 
       {/* Title */}
-      <text x={8} y={18} fill="#94a3b8" fontSize={11} fontFamily="monospace">
+      <text x={8} y={18} fill={UI_TEXT_PRIMARY} fontSize={11} fontFamily="monospace">
         Side View (XY)
       </text>
 
@@ -211,7 +212,7 @@ const SideView: React.FC<SideViewProps> = ({
         strokeWidth={2}
         strokeDasharray="4 4"
       />
-      <text x={4} y={groundY - 4} fill="#64748b" fontSize={9} fontFamily="monospace">
+      <text x={4} y={groundY - 4} fill={UI_TEXT_MUTED} fontSize={9} fontFamily="monospace">
         ground
       </text>
 
@@ -225,7 +226,7 @@ const SideView: React.FC<SideViewProps> = ({
         strokeWidth={0.25}
       />
       {/* Wheel contact point */}
-      <circle cx={wheelCx} cy={groundY} r={3} fill="#64748b" />
+      <circle cx={wheelCx} cy={groundY} r={3} fill={UI_TEXT_MUTED} />
 
       {/* Board surface */}
       <rect
@@ -235,7 +236,7 @@ const SideView: React.FC<SideViewProps> = ({
         height={boardThicknessPx}
         fill="#334155"
       />
-      <text x={boardLineRight + 4} y={boardSurfaceY + boardThicknessPx + 4} fill="#64748b" fontSize={9} fontFamily="monospace">
+      <text x={boardLineRight + 4} y={boardSurfaceY + boardThicknessPx + 4} fill={UI_TEXT_MUTED} fontSize={9} fontFamily="monospace">
         board
       </text>
 
@@ -350,13 +351,13 @@ const SideView: React.FC<SideViewProps> = ({
       <path
         d={`M ${originX + arcRadius} ${originY} A ${arcRadius} ${arcRadius} 0 0 0 ${arcEndX} ${arcEndY}`}
         fill="none"
-        stroke="#94a3b8"
+        stroke={UI_TEXT_PRIMARY}
         strokeWidth={1}
       />
       <text
         x={originX + arcRadius * Math.cos(alphaRad / 2) + 4}
         y={originY - arcRadius * Math.sin(alphaRad / 2)}
-        fill="#94a3b8"
+        fill={UI_TEXT_PRIMARY}
         fontSize={10}
         fontFamily="monospace"
       >
@@ -412,18 +413,18 @@ const SideView: React.FC<SideViewProps> = ({
       {/* Arrow markers definition */}
       <defs>
         <marker id="arrowUp" markerWidth={6} markerHeight={6} refX={3} refY={6} orient="auto">
-          <path d="M0,6 L3,0 L6,6" fill="#64748b" />
+          <path d="M0,6 L3,0 L6,6" fill={UI_TEXT_MUTED} />
         </marker>
         <marker id="arrowDown" markerWidth={6} markerHeight={6} refX={3} refY={0} orient="auto">
-          <path d="M0,0 L3,6 L6,0" fill="#64748b" />
+          <path d="M0,0 L3,6 L6,0" fill={UI_TEXT_MUTED} />
         </marker>
       </defs>
 
       {/* Axis labels */}
-      <text x={width - 20} y={originY + 4} fill="#475569" fontSize={10} fontFamily="monospace">
+      <text x={width - 20} y={originY + 4} fill={UI_TEXT_SECONDARY} fontSize={10} fontFamily="monospace">
         +X
       </text>
-      <text x={originX + 4} y={20} fill="#475569" fontSize={10} fontFamily="monospace">
+      <text x={originX + 4} y={20} fill={UI_TEXT_SECONDARY} fontSize={10} fontFamily="monospace">
         +Y
       </text>
       <line

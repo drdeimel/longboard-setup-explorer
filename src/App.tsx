@@ -296,7 +296,7 @@ const App: React.FC = () => {
         <h1 className="text-xl font-bold tracking-tight text-slate-100">
           Longboard Truck Simulator
         </h1>
-        <p className="text-xs text-slate-500 mt-0.5">
+        <p className="text-xs text-slate-300 mt-0.5">
           Interactive visualization of truck geometry and physics
         </p>
       </header>
@@ -324,10 +324,10 @@ const App: React.FC = () => {
         <main className="flex-1 overflow-y-auto p-4 space-y-4">
           {/* Header row with collapse toggle */}
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-medium text-gray-400 ml-1">Truck Diagrams</h2>
+            <h2 className="text-sm font-medium text-gray-200 ml-1">Truck Diagrams</h2>
             <button
               onClick={() => setTopViewCollapsed(!topViewCollapsed)}
-              className="text-xs px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-gray-200 transition-colors"
+              className="text-xs px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-200 hover:text-white transition-colors"
               title={topViewCollapsed ? 'Show Top View (ICR)' : 'Hide Top View'}
             >
               {topViewCollapsed ? 'Show ICR ▶' : 'Hide ICR ▼'}

@@ -14,6 +14,7 @@ import type { BoardSetupConfig } from '../models/BoardSetupConfig'
 import { computePivotAxis } from '../geometry/pivotAxis'
 import { steeringMomentCurve, type SteeringMomentResult } from '../physics/lateralForce'
 import { returnKeyGeometryCurves, type KeyGeometryResult } from '../physics/keyGeometryDataSet'
+import { UI_TEXT_MUTED, UI_TEXT_PRIMARY } from '../theme/uiColors'
 
 /** Props for the SteeringMomentChart component. */
 interface SteeringMomentChartProps {
@@ -110,27 +111,27 @@ const SteeringMomentChart: React.FC<SteeringMomentChartProps> = ({
       layout={{
         title: {
           text: `Steering Moment vs Lateral Force (φ=${leanAngleDeg}°)`,
-          font: { color: '#94a3b8', size: 13 },
+          font: { color: UI_TEXT_PRIMARY, size: 13 },
         },
         paper_bgcolor: '#0f172a',
         plot_bgcolor: '#0f172a',
-        font: { color: '#94a3b8', size: 11 },
+        font: { color: UI_TEXT_PRIMARY, size: 11 },
         xaxis: {
           title: { text: 'Lateral Force (N)', font: { size: 11 } },
           gridcolor: '#1e293b',
           zerolinecolor: '#334155',
-          color: '#64748b',
+          color: UI_TEXT_MUTED,
           range: [-maxForceN, maxForceN],
         },
         yaxis: {
           title: { text: 'Steering Moment (N·m)', font: { size: 11 } },
           gridcolor: '#1e293b',
           zerolinecolor: '#334155',
-          color: '#64748b',
+          color: UI_TEXT_MUTED,
         },
         legend: {
           bgcolor: 'transparent',
-          font: { color: '#94a3b8', size: 10 },
+          font: { color: UI_TEXT_PRIMARY, size: 10 },
         },
         margin: { l: 55, r: 20, t: 40, b: 50 },
         hovermode: 'x unified',

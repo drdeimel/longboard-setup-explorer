@@ -23,6 +23,7 @@ import React, { useState } from 'react'
 import type { TruckConfig } from '../models/TruckConfig'
 import { boardSurfaceHeight } from '../geometry/pivotAxis'
 import type { KeyGeometryResult } from '../physics/keyGeometryDataSet'
+import { UI_TEXT_MUTED, UI_TEXT_PRIMARY, UI_TEXT_SECONDARY } from '../theme/uiColors'
 
 /** Props for the FrontView component. */
 interface FrontViewProps {
@@ -210,7 +211,7 @@ const FrontView: React.FC<FrontViewProps> = ({
       <rect width={width} height={height} fill="#0f172a" rx={4} />
 
       {/* Title */}
-      <text x={8} y={18} fill="#94a3b8" fontSize={11} fontFamily="monospace">
+      <text x={8} y={18} fill={UI_TEXT_PRIMARY} fontSize={11} fontFamily="monospace">
         Front View (ZY)
       </text>
 
@@ -296,11 +297,25 @@ const FrontView: React.FC<FrontViewProps> = ({
             setIsDragging(true)
           }}
         />
-        <circle cx={centerForceXSvg} cy={centerForceYSvg} r={4} fill={color} stroke="#f59e0b" strokeWidth={1} />
+        {/* Center-of-force indicator: short, thick gravity arrow (downward). */}
+        <defs>
+          <marker id="gravity-arrow-tip" markerWidth={4} markerHeight={4} refX={2} refY={2} orient="auto">
+            <path d="M0,0 L4,2 L0,4 Z" fill="#94a3b8" />
+          </marker>
+        </defs>
+        <line
+          x1={centerForceXSvg}
+          y1={centerForceYSvg - 30}
+          x2={centerForceXSvg}
+          y2={centerForceYSvg - 8}
+          stroke="#94a3b8"
+          strokeWidth={4}
+          markerEnd="url(#gravity-arrow-tip)"
+        />
         <text
           x={boardEndX + 4}
           y={boardEndY + 4}
-          fill="#64748b"
+          fill={UI_TEXT_MUTED}
           fontSize={9}
           fontFamily="monospace"
         >
@@ -336,7 +351,7 @@ const FrontView: React.FC<FrontViewProps> = ({
             })
             .join(' ')}
           fill="none"
-          stroke="#64748b"
+          stroke={UI_TEXT_MUTED}
           strokeWidth={2}
           strokeDasharray="4 2"
           opacity={1.0}
@@ -354,7 +369,7 @@ const FrontView: React.FC<FrontViewProps> = ({
             })
             .join(' ')}
           fill="none"
-          stroke="#64748b"
+          stroke={UI_TEXT_MUTED}
           strokeWidth={2}
           strokeDasharray="2 2"
           opacity={0.9}
@@ -367,15 +382,15 @@ const FrontView: React.FC<FrontViewProps> = ({
         y1={groundY + 10}
         x2={rightWheelX}
         y2={groundY + 10}
-        stroke="#64748b"
+        stroke={UI_TEXT_MUTED}
         strokeWidth={1}
       />
-      <line x1={leftWheelX} y1={groundY + 6} x2={leftWheelX} y2={groundY + 14} stroke="#64748b" strokeWidth={1} />
-      <line x1={rightWheelX} y1={groundY + 6} x2={rightWheelX} y2={groundY + 14} stroke="#64748b" strokeWidth={1} />
+      <line x1={leftWheelX} y1={groundY + 6} x2={leftWheelX} y2={groundY + 14} stroke={UI_TEXT_MUTED} strokeWidth={1} />
+      <line x1={rightWheelX} y1={groundY + 6} x2={rightWheelX} y2={groundY + 14} stroke={UI_TEXT_MUTED} strokeWidth={1} />
       <text
         x={(leftWheelX + rightWheelX) / 2}
         y={groundY + 22}
-        fill="#64748b"
+        fill={UI_TEXT_MUTED}
         fontSize={9}
         fontFamily="monospace"
         textAnchor="middle"
@@ -385,10 +400,10 @@ const FrontView: React.FC<FrontViewProps> = ({
 
 
       {/* Axis labels */}
-      <text x={width - 20} y={axleY + 4} fill="#475569" fontSize={10} fontFamily="monospace">
+      <text x={width - 20} y={axleY + 4} fill={UI_TEXT_SECONDARY} fontSize={10} fontFamily="monospace">
         +Z
       </text>
-      <text x={originX + 4} y={20} fill="#475569" fontSize={10} fontFamily="monospace">
+      <text x={originX + 4} y={20} fill={UI_TEXT_SECONDARY} fontSize={10} fontFamily="monospace">
         +Y
       </text>
     </svg>

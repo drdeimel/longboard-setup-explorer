@@ -21,6 +21,7 @@ import type { BoardSetupConfig } from '../models/BoardSetupConfig'
 import { DEFAULT_MAX_LEAN } from '../models/BoardSetupConfig'
 import { computePivotAxis } from '../geometry/pivotAxis'
 import { returnKeyGeometryCurves, type KeyGeometryResult } from '../physics/keyGeometryDataSet'
+import { UI_TEXT_MUTED, UI_TEXT_PRIMARY, UI_TEXT_SECONDARY } from '../theme/uiColors'
 
 /** Props for the TopView component. */
 interface TopViewProps {
@@ -117,7 +118,7 @@ const TopView: React.FC<TopViewProps> = ({
     return (
       <svg width="100%" height={height} className="block">
         <rect width={width} height={height} fill="#0f172a" rx={4} />
-        <text x={width / 2} y={height / 2} fill="#64748b" textAnchor="middle" fontSize={12}>
+        <text x={width / 2} y={height / 2} fill={UI_TEXT_MUTED} textAnchor="middle" fontSize={12}>
           No setups
         </text>
       </svg>
@@ -196,7 +197,7 @@ const TopView: React.FC<TopViewProps> = ({
       </defs>
 
       {/* Title */}
-      <text x={8} y={18} fill="#94a3b8" fontSize={11} fontFamily="monospace">
+      <text x={8} y={18} fill={UI_TEXT_PRIMARY} fontSize={11} fontFamily="monospace">
         Top View (XZ) — ICR Locus
       </text>
 
@@ -323,15 +324,15 @@ const TopView: React.FC<TopViewProps> = ({
         return (
           <g>
             {/* vertical dimension line */}
-            <line x1={annotX} y1={frontY} x2={annotX} y2={rearY} stroke="#64748b" strokeWidth={1} />
+            <line x1={annotX} y1={frontY} x2={annotX} y2={rearY} stroke={UI_TEXT_MUTED} strokeWidth={1} />
             {/* tick at front axle */}
-            <line x1={annotX - 4} y1={frontY} x2={annotX + 4} y2={frontY} stroke="#64748b" strokeWidth={1} />
+            <line x1={annotX - 4} y1={frontY} x2={annotX + 4} y2={frontY} stroke={UI_TEXT_MUTED} strokeWidth={1} />
             {/* tick at rear axle */}
-            <line x1={annotX - 4} y1={rearY} x2={annotX + 4} y2={rearY} stroke="#64748b" strokeWidth={1} />
+            <line x1={annotX - 4} y1={rearY} x2={annotX + 4} y2={rearY} stroke={UI_TEXT_MUTED} strokeWidth={1} />
             <text
               x={annotX + 8}
               y={(frontY + rearY) / 2 + 4}
-              fill="#64748b"
+              fill={UI_TEXT_MUTED}
               fontSize={9}
               fontFamily="monospace"
               textAnchor="start"
@@ -347,7 +348,7 @@ const TopView: React.FC<TopViewProps> = ({
       <text
         x={originX + 4}
         y={originY - 4}
-        fill="#475569"
+        fill={UI_TEXT_SECONDARY}
         fontSize={10}
         fontFamily="monospace"
         textAnchor="middle"
@@ -357,7 +358,7 @@ const TopView: React.FC<TopViewProps> = ({
       <text
         x={originX + 4}
         y={originY + maxWheelbase * icrScale + 14}
-        fill="#475569"
+        fill={UI_TEXT_SECONDARY}
         fontSize={10}
         fontFamily="monospace"
         textAnchor="middle"
@@ -367,7 +368,7 @@ const TopView: React.FC<TopViewProps> = ({
       <text
         x={width - 6}
         y={originY + maxWheelbase * icrScale / 2 + 4}
-        fill="#475569"
+        fill={UI_TEXT_SECONDARY}
         fontSize={10}
         fontFamily="monospace"
         textAnchor="end"
@@ -376,7 +377,7 @@ const TopView: React.FC<TopViewProps> = ({
       </text>
 
       {/* Legend */}
-      <text x={8} y={height - 8} fill="#475569" fontSize={9} fontFamily="monospace">
+      <text x={8} y={height - 8} fill={UI_TEXT_SECONDARY} fontSize={9} fontFamily="monospace">
         ICR locus — solid: Z≥0 (heel lean) · dashed: Z&lt;0 (toe lean)
       </text>
     </svg>

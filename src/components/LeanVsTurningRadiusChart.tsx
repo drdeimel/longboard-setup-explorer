@@ -20,6 +20,7 @@ import type { BoardSetupConfig } from '../models/BoardSetupConfig'
 import { DEFAULT_MAX_LEAN } from '../models/BoardSetupConfig'
 import { computePivotAxis } from '../geometry/pivotAxis'
 import { returnKeyGeometryCurves, type KeyGeometryResult } from '../physics/keyGeometryDataSet'
+import { UI_TEXT_MUTED, UI_TEXT_PRIMARY } from '../theme/uiColors'
 
 /** Props for the LeanVsTurningRadiusChart component. */
 interface LeanVsTurningRadiusChartProps {
@@ -122,27 +123,27 @@ const LeanVsTurningRadiusChart: React.FC<LeanVsTurningRadiusChartProps> = ({
       layout={{
         title: {
           text: 'Turning linearity [1/m/°]',
-          font: { color: '#94a3b8', size: 13 },
+          font: { color: UI_TEXT_PRIMARY, size: 13 },
         },
         paper_bgcolor: '#0f172a',
         plot_bgcolor: '#0f172a',
-        font: { color: '#94a3b8', size: 11 },
+        font: { color: UI_TEXT_PRIMARY, size: 11 },
         xaxis: {
           title: { text: 'Lean [°]', font: { size: 11 } },
           gridcolor: '#1e293b',
           zerolinecolor: '#334155',
-          color: '#64748b',
+          color: UI_TEXT_MUTED,
           range: [-axisMaxLean, axisMaxLean],
         },
         yaxis: {
           title: { text: 'Inverse Turn Radius [1/m]', font: { size: 11 } },
           gridcolor: '#1e293b',
           zerolinecolor: '#334155',
-          color: '#64748b',
+          color: UI_TEXT_MUTED,
         },
         legend: {
           bgcolor: 'transparent',
-          font: { color: '#94a3b8', size: 10 },
+          font: { color: UI_TEXT_PRIMARY, size: 10 },
         },
         margin: { l: 60, r: 20, t: 40, b: 50 },
         hovermode: 'x unified',

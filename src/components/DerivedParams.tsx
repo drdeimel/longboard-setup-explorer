@@ -125,7 +125,7 @@ const DerivedParams: React.FC<DerivedParamsProps> = ({ setups, activeSetupId, ke
   return (
     <div className="rounded-md bg-slate-900 border border-slate-700 overflow-hidden">
       <div className="px-3 py-2 border-b border-slate-700">
-        <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
+        <h3 className="text-xs font-semibold text-slate-200 uppercase tracking-wide">
           Derived Parameters
         </h3>
       </div>
@@ -133,27 +133,27 @@ const DerivedParams: React.FC<DerivedParamsProps> = ({ setups, activeSetupId, ke
         <table className="w-full text-xs">
           <thead>
             <tr className="border-b border-slate-800">
-              <th className="text-left px-3 py-2 text-slate-500 font-normal">Setup</th>
+              <th className="text-left px-3 py-2 text-slate-300 font-normal">Setup</th>
               <th
-                className="text-right px-2 py-2 text-slate-500 font-normal"
+                className="text-right px-2 py-2 text-slate-300 font-normal"
                 title="Felt truck height = effective rotation center height (mm)"
               >
                 Felt truck (mm)
               </th>
               <th
-                className="text-right px-2 py-2 text-slate-500 font-normal"
+                className="text-right px-2 py-2 text-slate-300 font-normal"
                 title="Inverted pendulum height = board surface height + wheel radius (mm)"
               >
                 h_pend (mm)
               </th>
               <th
-                className="text-right px-2 py-2 text-slate-500 font-normal"
+                className="text-right px-2 py-2 text-slate-300 font-normal"
                 title="Lean-to-steer leverage at 0° lean (°steer / °lean)"
               >
                 δ/φ|₀ (°/°)
               </th>
               <th
-                className="text-right px-3 py-2 text-slate-500 font-normal"
+                className="text-right px-3 py-2 text-slate-300 font-normal"
                 title="Contact patch lateral rate at 0° lean (mm/°)"
               >
                 dz/dφ|₀ (mm/°)
