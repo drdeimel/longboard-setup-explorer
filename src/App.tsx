@@ -34,7 +34,7 @@ import LeanVsTurningRadiusChart from './components/LeanVsTurningRadiusChart'
 import LeanVsCentripetalAxisChart from './components/LeanVsCentripetalAxisChart'
 import { saveState, loadState } from './persistence/localStorage'
 import { computePivotAxis } from './geometry/pivotAxis'
-import { returnKeyGeometryCurves, type KeyGeometryResult } from './physics/keyGeometryDataSet'
+import { returnKeyGeometryCurves } from './physics/keyGeometryDataSet'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Default state
@@ -85,25 +85,34 @@ function buildInitialState(): {
 // Shared SVG scale
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Compute a shared pixels-per-mm scale that fits the active setup's geometry
- * into the SVG diagram area. All three SVG views (Side, Front, Top) use this
- * same scale to maintain geometric consistency across views.
- *
- * The scale is computed based on the vertical space needed to show:
- * - Ground (at -wheelRadius)
- * - Board surface (at dBoard)
- * Plus margins.
- *
- * @param setup - The active board setup.
- * @param availableHeight - Available pixel height for the view.
- * @returns Shared pixels-per-mm scale.
- */
-function computeSharedScale(setup: BoardSetupConfig, availableHeight: number): number {
+function computeRequiredSideVerticalExtentMm(setup: BoardSetupConfig): number {
   const truck = setup.frontTruck
   const dBoard = truck.baseplateToBoard + truck.axleToBaseplateDistance
-  const totalHeightMm = dBoard + truck.wheelDiameter / 2 + 30 // 30mm margin
-  return Math.max(0.3, Math.min(2.5, (availableHeight - 50) / totalHeightMm))
+  return dBoard + truck.wheelDiameter / 2 + 30
+}
+
+function computeRequiredFrontVerticalExtentMm(setup: BoardSetupConfig): number {
+  const truck = setup.frontTruck
+  const dBoard = truck.baseplateToBoard + truck.axleToBaseplateDistance
+  return dBoard + truck.wheelDiameter / 2 + 20
+}
+
+function quantizeVerticalExtentMm(prev: number, required: number): number {
+  if (prev <= 0) return required
+
+  let next = prev
+
+  // Grow in fixed +10% steps.
+  while (required > next) {
+    next *= 1.1
+  }
+
+  // Shrink only when usage drops below 25%.
+  while (required < next * 0.25) {
+    next *= 0.25
+  }
+
+  return next
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -123,6 +132,15 @@ const App: React.FC = () => {
     initial.steeringLeanAngleDeg,
   )
   const [topViewCollapsed, setTopViewCollapsed] = useState<boolean>(false)
+  const diagramsRowRef = useRef<HTMLDivElement | null>(null)
+  const [diagramHeightPx, setDiagramHeightPx] = useState<number>(280)
+  const [verticalExtentBucketMm, setVerticalExtentBucketMm] = useState<number>(() => {
+    const initialSetup = initial.setups[0]
+    return Math.max(
+      computeRequiredSideVerticalExtentMm(initialSetup),
+      computeRequiredFrontVerticalExtentMm(initialSetup),
+    )
+  })
 
   // ── Persistence: save to localStorage (debounced to avoid blocking on slider changes) ──
   const saveTimerRef = useRef<number | null>(null)
@@ -145,7 +163,40 @@ const App: React.FC = () => {
 
   // ── Derived ───────────────────────────────────────────────────────────────
   const activeSetup = setups.find(s => s.id === activeSetupId) ?? setups[0]
-  const sharedPpm = computeSharedScale(activeSetup, 280)
+  const requiredExtentMm = useMemo(() => {
+    // Shared vertical reference for both Side and Front views.
+    return Math.max(
+      computeRequiredSideVerticalExtentMm(activeSetup),
+      computeRequiredFrontVerticalExtentMm(activeSetup),
+    )
+  }, [activeSetup])
+
+  useEffect(() => {
+    setVerticalExtentBucketMm(prev => quantizeVerticalExtentMm(prev, requiredExtentMm))
+  }, [requiredExtentMm])
+
+  useEffect(() => {
+    const el = diagramsRowRef.current
+    if (!el || typeof ResizeObserver === 'undefined') return
+
+    const update = () => {
+      const h = Math.max(220, Math.round(el.getBoundingClientRect().height))
+      setDiagramHeightPx(h)
+    }
+
+    update()
+    const observer = new ResizeObserver(update)
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [topViewCollapsed])
+
+  const sharedViewHeightPx = Math.max(220, diagramHeightPx)
+  // One floor offset for both views so the dotted ground lines overlap exactly.
+  const sharedGroundOffsetPx = Math.max(12, Math.min(40, Math.round(sharedViewHeightPx * 0.07)))
+  const availableHeightPx = Math.max(80, sharedViewHeightPx - sharedGroundOffsetPx - 16)
+  const verticalPpm = Math.max(0.3, Math.min(2.5, availableHeightPx / verticalExtentBucketMm))
+  // Simplified model: one shared vertical ppm only (no horizontal cap coupling).
+  const sharedPpm = verticalPpm
 
   // ── Key Geometry Curves (computed once per setup when config changes) ───────
   const DEFAULT_SAMPLES = 91
@@ -282,17 +333,17 @@ const App: React.FC = () => {
             </button>
           </div>
 
-          {/* Row 1: SVG diagrams - Side and Front views with optional TopView */}
-          <div className={`grid gap-1 ${topViewCollapsed ? 'grid-cols-3' : 'grid-cols-5'}`}>
+          {/* Row 1: SVG diagrams - keep Side/Front frame widths symmetric in both layouts */}
+          <div ref={diagramsRowRef} className={`grid gap-1 ${topViewCollapsed ? 'grid-cols-2' : 'grid-cols-6'}`}>
             {/* Side View */}
-            <div className={topViewCollapsed ? 'col-span-1' : 'col-span-2'}>
+            <div className={topViewCollapsed ? 'col-span-1 w-full' : 'col-span-2 w-full'}>
               <SideView
                 truck={activeSetup.frontTruck}
                 color={activeSetup.color}
-                width={topViewCollapsed ? 500 : 500}
-                height={280}
+                width={500}
+                height={sharedViewHeightPx}
                 pixelsPerMm={sharedPpm}
-                groundOffsetPx={20}
+                groundOffsetPx={sharedGroundOffsetPx}
               />
             </div>
 
@@ -302,22 +353,22 @@ const App: React.FC = () => {
                 <TopView
                   setups={setups}
                   activeSetupId={activeSetupId}
-                  width={350}
-                  height={280}
+                  width={500}
+                  height={sharedViewHeightPx}
                   keyGeometryCurves={keyGeometryCurves}
                 />
               </div>
             )}
 
             {/* Front View */}
-            <div className={topViewCollapsed ? 'col-span-2' : 'col-span-1'}>
+            <div className={topViewCollapsed ? 'col-span-1 w-full' : 'col-span-2 w-full'}>
               <FrontView
                 truck={activeSetup.frontTruck}
                 color={activeSetup.color}
-                width={topViewCollapsed ? 500 : 400}
-                height={280}
+                width={500}
+                height={sharedViewHeightPx}
                 pixelsPerMm={sharedPpm}
-                groundOffsetPx={20}
+                groundOffsetPx={sharedGroundOffsetPx}
                 keyGeometryCurves={keyGeometryCurves}
                 leanAngleDeg={steeringLeanAngleDeg}
                 onLeanAngleChange={setSteeringLeanAngleDeg}

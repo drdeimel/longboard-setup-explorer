@@ -99,8 +99,10 @@ const FrontView: React.FC<FrontViewProps> = ({
   ]
 
   const groundY = originY + truck.wheelDiameter / 2 * ppm
-  const wheelWidth = 52 * ppm // 52mm wheel width
-  const wheelHeight = 2 * Math.min(truck.wheelDiameter * ppm, 60) // simplified wheel
+  const wheelWidthMm = 52 // fixed wheel width for front-view indicator
+  const wheelWidth = wheelWidthMm * ppm
+  // Match wheel indicator height to actual wheel diameter in this view.
+  const wheelHeight = truck.wheelDiameter * ppm
 
   const wheelOffset = 14 // mm offset from axle center to wheel contact point
 
