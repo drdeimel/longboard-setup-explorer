@@ -99,7 +99,6 @@ const FrontView: React.FC<FrontViewProps> = ({
   ]
 
   const groundY = originY + truck.wheelDiameter / 2 * ppm
-  const [, boardSVGY] = toSVG(0, dBoard)
   const wheelWidth = 52 * ppm // 52mm wheel width
   const wheelHeight = 2 * Math.min(truck.wheelDiameter * ppm, 60) // simplified wheel
 
@@ -108,7 +107,6 @@ const FrontView: React.FC<FrontViewProps> = ({
   const [leftWheelX] = toSVG(-halfTrack - wheelOffset, 0)
   const [rightWheelX] = toSVG(halfTrack + wheelOffset, 0)
 
-  const axleHeight = wheelHeight/2
   // Axle line endpoints
   const [leftAxleX, axleY] = toSVG(-halfTrack, 0)
   const [rightAxleX] = toSVG(halfTrack, 0)
@@ -117,11 +115,6 @@ const FrontView: React.FC<FrontViewProps> = ({
   const hangerTop = originY - (truck.axleToBaseplateDistance * ppm * 0.6)
   const hangerHeight = truck.axleToBaseplateDistance * ppm * 0.6
   const hangerHalfWidth = (halfTrack - 10) * ppm
-
-  // Bushing positions along the pivot axis projection
-  // Bushings are at ±bushingMomentArm from the crown of the hanger (approx. axle center)
-  const bushingArmPx = truck.bushingMomentArm * ppm
-  const [bushingCenterX, bushingCenterY] = toSVG(0, truck.axleToBaseplateDistance * 0.4)
 
   // Board surface computations (moved out of JSX)
   // Get the center of board position from keyGeometryCurves at the current lean angle
@@ -132,6 +125,7 @@ const FrontView: React.FC<FrontViewProps> = ({
   let invPendulumHeight = 0
   let rotCenterY = 0
   let effectiveLeanAngleDeg = leanAngleDeg
+  const pivotAxisAngleRad = (truck.pivotAxisAngle * Math.PI) / 180
 
   if (keyGeometryCurves && keyGeometryCurves[0]?.curve) {
     const curve = keyGeometryCurves[0].curve
@@ -143,10 +137,13 @@ const FrontView: React.FC<FrontViewProps> = ({
     rotCenterY = dBoard - invPendulumHeight
 
     boardCenterZ = closestEntry.centerOfBoardZ
-    boardCenterY = closestEntry.centerOfBoardY + rotCenterY//- rotCenterY
+    boardCenterY = closestEntry.centerOfBoardY + rotCenterY
     centerForceZ = closestEntry.centerOfForceZ
-    centerForceY = closestEntry.centerOfForceY +rotCenterY //- rotCenterY
+    centerForceY = closestEntry.centerOfForceY + rotCenterY
     effectiveLeanAngleDeg = closestEntry.leanAngleDeg
+  } else {
+    invPendulumHeight = truck.baseplateToBoard + truck.axleToBaseplateDistance - truck.rake / Math.cos(pivotAxisAngleRad)
+    rotCenterY = dBoard - invPendulumHeight
   }
 
   // Calculate tilted board endpoints
@@ -265,9 +262,9 @@ const FrontView: React.FC<FrontViewProps> = ({
       <>
         <line
           x1={boardStartX}
-          y1={boardStartY+10}
+          y1={boardStartY}
           x2={boardEndX}
-          y2={boardEndY+10}
+          y2={boardEndY}
           stroke="#334155"
           strokeWidth={20}
         />
@@ -322,7 +319,8 @@ const FrontView: React.FC<FrontViewProps> = ({
         <path
           d={keyGeometryCurves[0].curve
             .map((p, i) => {
-              const [sx, sy] = toSVG(p.centerOfBoardZ, p.centerOfBoardY+rotCenterY)
+              const pointRotCenterY = dBoard - p.invPendulumHeight
+              const [sx, sy] = toSVG(p.centerOfBoardZ, p.centerOfBoardY + pointRotCenterY)
               return `${i === 0 ? 'M' : 'L'} ${sx} ${sy}`
             })
             .join(' ')}
@@ -339,7 +337,8 @@ const FrontView: React.FC<FrontViewProps> = ({
         <path
           d={keyGeometryCurves[0].curve
             .map((p, i) => {
-              const [sx, sy] = toSVG(p.centerOfForceZ, p.centerOfForceY+rotCenterY)
+              const pointRotCenterY = dBoard - p.invPendulumHeight
+              const [sx, sy] = toSVG(p.centerOfForceZ, p.centerOfForceY + pointRotCenterY)
               return `${i === 0 ? 'M' : 'L'} ${sx} ${sy}`
             })
             .join(' ')}
