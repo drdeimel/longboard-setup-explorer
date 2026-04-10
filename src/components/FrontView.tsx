@@ -168,8 +168,10 @@ const FrontView: React.FC<FrontViewProps> = ({
   const [boardStartX, boardStartY] = toSVG(boardCenterZ - tiltOffsetZ, boardCenterY + tiltOffsetY)
   const [boardEndX, boardEndY] = toSVG(boardCenterZ + tiltOffsetZ, boardCenterY - tiltOffsetY)
   // Board thickness is controlled globally from App/ConfigPanel.
-  // The top edge stays on the existing board centerline; the body extends downward.
+  // Keep thickness perpendicular to the board centerline so the rectangle preserves shape while rotating.
   const boardThicknessPx = boardThicknessMm * ppm
+  const normalOffsetX = -boardThicknessPx * Math.sin(leanRad)
+  const normalOffsetY = boardThicknessPx * Math.cos(leanRad)
   const [boardCenterXSvg, boardCenterYSvg] = toSVG(boardCenterZ, boardCenterY)
   const [centerForceXSvg, centerForceYSvg] = toSVG(centerForceZ, centerForceY)
   const [rotCenterXSvg, rotCenterYSvg] = toSVG(0, rotCenterY)
@@ -281,7 +283,7 @@ const FrontView: React.FC<FrontViewProps> = ({
       {/* Board surface - drawn using centerOfBoard position and tilted */}
       <>
         <polygon
-          points={`${boardStartX},${boardStartY} ${boardEndX},${boardEndY} ${boardEndX},${boardEndY + boardThicknessPx} ${boardStartX},${boardStartY + boardThicknessPx}`}
+          points={`${boardStartX},${boardStartY} ${boardEndX},${boardEndY} ${boardEndX + normalOffsetX},${boardEndY + normalOffsetY} ${boardStartX + normalOffsetX},${boardStartY + normalOffsetY}`}
           fill="#334155"
         />
         {/* Draggable board center point - drag to set lean angle */}
