@@ -184,10 +184,14 @@ const FrontView: React.FC<FrontViewProps> = ({
       onMouseMove={(e) => {
         if (!isDragging || !onLeanAngleChange) return
 
-        // Get mouse position relative to SVG
+        // Get mouse position relative to SVG viewport pixels
         const svgRect = e.currentTarget.getBoundingClientRect()
-        const mouseX = e.clientX - svgRect.left
-        const mouseY = e.clientY - svgRect.top
+        // Convert to SVG viewBox coordinates to avoid cursor offset when
+        // rendered size differs from internal SVG width/height.
+        const scaleX = width / Math.max(1, svgRect.width)
+        const scaleY = height / Math.max(1, svgRect.height)
+        const mouseX = (e.clientX - svgRect.left) * scaleX
+        const mouseY = (e.clientY - svgRect.top) * scaleY
 
         // Calculate angle from rotation center to mouse position
         // In SVG coordinates: X increases right, Y increases down
