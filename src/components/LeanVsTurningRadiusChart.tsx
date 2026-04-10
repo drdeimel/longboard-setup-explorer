@@ -29,6 +29,8 @@ interface LeanVsTurningRadiusChartProps {
   riderMassKg: number
   /** Rider center-of-mass height above ground in m. */
   comHeightM: number
+  /** Global board thickness in mm, added to baseplate-to-board distance. */
+  boardThicknessMm?: number
   /** Number of sample points. */
   numSamples?: number
   /** ID of the highlighted setup. */
@@ -52,6 +54,7 @@ const LeanVsTurningRadiusChart: React.FC<LeanVsTurningRadiusChartProps> = ({
   setups,
   riderMassKg,
   comHeightM,
+  boardThicknessMm = 11,
   numSamples = DEFAULT_SAMPLES,
   activeSetupId,
   keyGeometryCurves,
@@ -71,7 +74,7 @@ const LeanVsTurningRadiusChart: React.FC<LeanVsTurningRadiusChartProps> = ({
         setup.frontTruck.pivotAxisAngle,
         setup.frontTruck.rake,
         setup.frontTruck.axleToBaseplateDistance,
-        setup.frontTruck.baseplateToBoard,
+        boardThicknessMm + setup.frontTruck.baseplateToBoard,
         setup.frontTruck.roadsideBushing,
         setup.frontTruck.boardsideBushing,
         riderMassKg,
@@ -108,7 +111,7 @@ const LeanVsTurningRadiusChart: React.FC<LeanVsTurningRadiusChartProps> = ({
     })
 
     return allTraces
-  }, [setups, riderMassKg, comHeightM, numSamples, activeSetupId, keyGeometryCurves])
+  }, [setups, riderMassKg, comHeightM, boardThicknessMm, numSamples, activeSetupId, keyGeometryCurves])
 
   // Derive x-axis range from the keyGeometryCurves payload, falling back to DEFAULT_MAX_LEAN.
   const axisMaxLean = keyGeometryCurves?.[0]?.maxLeanDeg ?? DEFAULT_MAX_LEAN

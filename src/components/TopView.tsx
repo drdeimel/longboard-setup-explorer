@@ -43,6 +43,8 @@ interface TopViewProps {
    * passed to all other chart components.
    */
   keyGeometryCurves?: { setupId: string; maxLeanDeg: number; curve: KeyGeometryResult[] }[]
+  /** Global board thickness in mm, added to baseplate-to-board distance in physics computations. */
+  boardThicknessMm?: number
 }
 
 const DEFAULT_WIDTH = 360
@@ -109,6 +111,7 @@ const TopView: React.FC<TopViewProps> = ({
   width = DEFAULT_WIDTH,
   height = DEFAULT_HEIGHT,
   keyGeometryCurves,
+  boardThicknessMm = 11,
 }) => {
   if (setups.length === 0) {
     return (
@@ -157,7 +160,7 @@ const TopView: React.FC<TopViewProps> = ({
         setup.frontTruck.pivotAxisAngle,
         setup.frontTruck.rake,
         setup.frontTruck.axleToBaseplateDistance,
-        setup.frontTruck.baseplateToBoard,
+        boardThicknessMm + setup.frontTruck.baseplateToBoard,
         setup.frontTruck.roadsideBushing,
         setup.frontTruck.boardsideBushing,
         75,     // default rider mass fallback (kg)
@@ -172,7 +175,7 @@ const TopView: React.FC<TopViewProps> = ({
       return { setup, curve }
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [setups, keyGeometryCurves])
+  }, [setups, keyGeometryCurves, boardThicknessMm])
 
   return (
     <svg

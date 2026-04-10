@@ -21,6 +21,8 @@ interface LeanVsSteerChartProps {
   riderMassKg?: number
   /** Rider center-of-mass height above ground in m. */
   comHeightM?: number
+  /** Global board thickness in mm, added to baseplate-to-board distance. */
+  boardThicknessMm?: number
   /** Number of sample points per curve. */
   numSamples?: number
   /** ID of the highlighted setup (drawn on top, thicker). */
@@ -41,6 +43,7 @@ const LeanVsSteerChart: React.FC<LeanVsSteerChartProps> = ({
   setups,
   riderMassKg = 75,
   comHeightM = 1.0,
+  boardThicknessMm = 11,
   numSamples = DEFAULT_SAMPLES,
   activeSetupId,
   keyGeometryCurves,
@@ -58,7 +61,7 @@ const LeanVsSteerChart: React.FC<LeanVsSteerChartProps> = ({
         setup.frontTruck.pivotAxisAngle,
         setup.frontTruck.rake,
         setup.frontTruck.axleToBaseplateDistance,
-        setup.frontTruck.baseplateToBoard,
+        boardThicknessMm + setup.frontTruck.baseplateToBoard,
         setup.frontTruck.roadsideBushing,
         setup.frontTruck.boardsideBushing,
         riderMassKg,
@@ -89,7 +92,7 @@ const LeanVsSteerChart: React.FC<LeanVsSteerChartProps> = ({
           'Steer: %{y:.2f}°<extra></extra>',
       }
     })
-  }, [setups, riderMassKg, comHeightM, numSamples, activeSetupId, keyGeometryCurves])
+  }, [setups, riderMassKg, comHeightM, boardThicknessMm, numSamples, activeSetupId, keyGeometryCurves])
 
   // Derive x-axis range from the keyGeometryCurves payload, falling back to DEFAULT_MAX_LEAN.
   const axisMaxLean = keyGeometryCurves?.[0]?.maxLeanDeg ?? DEFAULT_MAX_LEAN

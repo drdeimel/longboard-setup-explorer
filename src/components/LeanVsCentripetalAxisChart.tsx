@@ -26,6 +26,8 @@ interface LeanVsCentripetalAxisChartProps {
   riderMassKg: number
   /** Rider center-of-mass height above ground in m. */
   comHeightM: number
+  /** Global board thickness in mm, added to baseplate-to-board distance. */
+  boardThicknessMm?: number
   /** Number of sample points. */
   numSamples?: number
   /** ID of the highlighted setup. */
@@ -49,6 +51,7 @@ const LeanVsCentripetalAxisChart: React.FC<LeanVsCentripetalAxisChartProps> = ({
   setups,
   riderMassKg,
   comHeightM,
+  boardThicknessMm = 11,
   numSamples = DEFAULT_SAMPLES,
   activeSetupId,
   keyGeometryCurves,
@@ -68,7 +71,7 @@ const LeanVsCentripetalAxisChart: React.FC<LeanVsCentripetalAxisChartProps> = ({
         setup.frontTruck.pivotAxisAngle,
         setup.frontTruck.rake,
         setup.frontTruck.axleToBaseplateDistance,
-        setup.frontTruck.baseplateToBoard,
+        boardThicknessMm + setup.frontTruck.baseplateToBoard,
         setup.frontTruck.roadsideBushing,
         setup.frontTruck.boardsideBushing,
         riderMassKg,
@@ -82,13 +85,15 @@ const LeanVsCentripetalAxisChart: React.FC<LeanVsCentripetalAxisChartProps> = ({
       )
 
       // Filter out null ICR points (parallel trucks)
-      const filtered = curve.filter(r => r.turningCenterX !== null)
+      const filtered = curve.filter(
+        (r): r is KeyGeometryResult & { turningCenterX: number } => r.turningCenterX !== null,
+      )
       const isActive = setup.id === activeSetupId
       const opacity = isActive || !activeSetupId ? 1 : 0.35
 
       allTraces.push({
         x: filtered.map(r => r.leanAngleDeg),
-        y: filtered.map(r => -r.turningCenterX as number),
+        y: filtered.map(r => -r.turningCenterX),
         type: 'scatter' as const,
         mode: 'lines' as const,
         name: setup.name,
@@ -105,7 +110,7 @@ const LeanVsCentripetalAxisChart: React.FC<LeanVsCentripetalAxisChartProps> = ({
     })
 
     return allTraces
-  }, [setups, riderMassKg, comHeightM, numSamples, activeSetupId, keyGeometryCurves])
+  }, [setups, riderMassKg, comHeightM, boardThicknessMm, numSamples, activeSetupId, keyGeometryCurves])
 
   // Derive x-axis range from the keyGeometryCurves payload, falling back to DEFAULT_MAX_LEAN.
   const axisMaxLean = keyGeometryCurves?.[0]?.maxLeanDeg ?? DEFAULT_MAX_LEAN

@@ -42,6 +42,8 @@ interface SideViewProps {
    * When provided, ensures the floor line aligns with FrontView for consistent visuals.
    */
   groundOffsetPx?: number
+  /** Global board thickness in mm (shared with FrontView). */
+  boardThicknessMm?: number
 }
 
 /** Default SVG dimensions. */
@@ -61,8 +63,12 @@ const SideView: React.FC<SideViewProps> = ({
   height = DEFAULT_HEIGHT,
   pixelsPerMm,
   groundOffsetPx = 20,
+  boardThicknessMm = 11,
 }) => {
-  const dBoard = boardSurfaceHeight(truck.axleToBaseplateDistance, truck.baseplateToBoard)
+  const dBoard = boardSurfaceHeight(
+    truck.axleToBaseplateDistance,
+    truck.baseplateToBoard + boardThicknessMm,
+  )
   const { direction: axisDir, point: axisPoint } = computePivotAxis(
     truck.pivotAxisAngle,
     truck.rake,
@@ -150,6 +156,9 @@ const SideView: React.FC<SideViewProps> = ({
   const [, boardSurfaceY] = toSVG(0, dBoard)
   const boardLineLeft = 20
   const boardLineRight = width - 20
+  // Board thickness is controlled globally from App/ConfigPanel.
+  // The top edge stays on boardSurfaceY; the body extends downward.
+  const boardThicknessPx = boardThicknessMm * ppm
 
   // Rake indicator: line from origin to axis closest point
   const [rakeEndX, rakeEndY] = toSVG(axisPoint[0], axisPoint[1])
@@ -169,7 +178,11 @@ const SideView: React.FC<SideViewProps> = ({
   // At rake=0, this equals axleToBaseplateDistance (height of pivot point above axle)
   // Positive rake moves the effective rotation center UP from the axle
   const pivotAxisAngleRad = (truck.pivotAxisAngle * Math.PI) / 180
-  const invPendulumHeight = truck.baseplateToBoard + truck.axleToBaseplateDistance - truck.rake / Math.cos(pivotAxisAngleRad)
+  const invPendulumHeight =
+    truck.baseplateToBoard +
+    boardThicknessMm +
+    truck.axleToBaseplateDistance -
+    truck.rake / Math.cos(pivotAxisAngleRad)
   const [, effectiveRotCenterY] = toSVG(0, dBoard - invPendulumHeight)
 
   return (
@@ -215,15 +228,14 @@ const SideView: React.FC<SideViewProps> = ({
       <circle cx={wheelCx} cy={groundY} r={3} fill="#64748b" />
 
       {/* Board surface */}
-      <line
-        x1={boardLineLeft}
-        y1={boardSurfaceY}
-        x2={boardLineRight}
-        y2={boardSurfaceY}
-        stroke="#334155"
-        strokeWidth={3}
+      <rect
+        x={boardLineLeft}
+        y={boardSurfaceY}
+        width={boardLineRight - boardLineLeft}
+        height={boardThicknessPx}
+        fill="#334155"
       />
-      <text x={boardLineRight + 4} y={boardSurfaceY + 4} fill="#64748b" fontSize={9} fontFamily="monospace">
+      <text x={boardLineRight + 4} y={boardSurfaceY + boardThicknessPx + 4} fill="#64748b" fontSize={9} fontFamily="monospace">
         board
       </text>
 

@@ -50,6 +50,8 @@ interface FrontViewProps {
   leanAngleDeg?: number
   /** Callback when user drags the board point to change lean angle. */
   onLeanAngleChange?: (leanAngleDeg: number) => void
+  /** Global board thickness in mm (shared with SideView). */
+  boardThicknessMm?: number
 }
 
 const DEFAULT_WIDTH = 500
@@ -71,10 +73,14 @@ const FrontView: React.FC<FrontViewProps> = ({
   keyGeometryCurves,
   leanAngleDeg = 0,
   onLeanAngleChange,
+  boardThicknessMm = 11,
 }) => {
   const [isDragging, setIsDragging] = useState(false)
 
-  const dBoard = boardSurfaceHeight(truck.axleToBaseplateDistance, truck.baseplateToBoard)
+  const dBoard = boardSurfaceHeight(
+    truck.axleToBaseplateDistance,
+    truck.baseplateToBoard + boardThicknessMm,
+  )
 
   // Geometry extents (in mm)
   const halfTrack = truck.trackWidth / 2
@@ -144,7 +150,11 @@ const FrontView: React.FC<FrontViewProps> = ({
     centerForceY = closestEntry.centerOfForceY + rotCenterY
     effectiveLeanAngleDeg = closestEntry.leanAngleDeg
   } else {
-    invPendulumHeight = truck.baseplateToBoard + truck.axleToBaseplateDistance - truck.rake / Math.cos(pivotAxisAngleRad)
+    invPendulumHeight =
+      truck.baseplateToBoard +
+      boardThicknessMm +
+      truck.axleToBaseplateDistance -
+      truck.rake / Math.cos(pivotAxisAngleRad)
     rotCenterY = dBoard - invPendulumHeight
   }
 
@@ -156,6 +166,9 @@ const FrontView: React.FC<FrontViewProps> = ({
 
   const [boardStartX, boardStartY] = toSVG(boardCenterZ - tiltOffsetZ, boardCenterY + tiltOffsetY)
   const [boardEndX, boardEndY] = toSVG(boardCenterZ + tiltOffsetZ, boardCenterY - tiltOffsetY)
+  // Board thickness is controlled globally from App/ConfigPanel.
+  // The top edge stays on the existing board centerline; the body extends downward.
+  const boardThicknessPx = boardThicknessMm * ppm
   const [boardCenterXSvg, boardCenterYSvg] = toSVG(boardCenterZ, boardCenterY)
   const [centerForceXSvg, centerForceYSvg] = toSVG(centerForceZ, centerForceY)
   const [rotCenterXSvg, rotCenterYSvg] = toSVG(0, rotCenterY)
@@ -262,13 +275,9 @@ const FrontView: React.FC<FrontViewProps> = ({
 
       {/* Board surface - drawn using centerOfBoard position and tilted */}
       <>
-        <line
-          x1={boardStartX}
-          y1={boardStartY}
-          x2={boardEndX}
-          y2={boardEndY}
-          stroke="#334155"
-          strokeWidth={20}
+        <polygon
+          points={`${boardStartX},${boardStartY} ${boardEndX},${boardEndY} ${boardEndX},${boardEndY + boardThicknessPx} ${boardStartX},${boardStartY + boardThicknessPx}`}
+          fill="#334155"
         />
         {/* Draggable board center point - drag to set lean angle */}
         <circle

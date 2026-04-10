@@ -239,6 +239,8 @@ const BushingEditor: React.FC<BushingEditorProps> = ({ label, bushing, onChange 
 export interface RiderParams {
   /** Rider mass in kg. */
   massKg: number
+  /** Global board thickness in mm (used by SideView + FrontView). */
+  boardThicknessMm: number
   /** Rider center-of-mass height above ground in m. */
   comHeightM: number
 }
@@ -565,6 +567,15 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
             step={1}
             unit="kg"
             onChange={v => onRiderParamsChange({ ...riderParams, massKg: v })}
+          />
+          <SliderRow
+            label="Board thickness"
+            value={riderParams.boardThicknessMm}
+            min={1}
+            max={30}
+            step={0.5}
+            unit="mm"
+            onChange={v => onRiderParamsChange({ ...riderParams, boardThicknessMm: v })}
           />
 
         </div>

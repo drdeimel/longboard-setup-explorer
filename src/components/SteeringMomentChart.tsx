@@ -23,6 +23,8 @@ interface SteeringMomentChartProps {
   riderMassKg?: number
   /** Rider center-of-mass height above ground in m. */
   comHeightM?: number
+  /** Global board thickness in mm, added to baseplate-to-board distance. */
+  boardThicknessMm?: number
   /** Board lean angle at which to evaluate the steering moment (degrees). */
   leanAngleDeg?: number
   /** Maximum lateral force to display (N). */
@@ -49,6 +51,7 @@ const SteeringMomentChart: React.FC<SteeringMomentChartProps> = ({
   setups,
   riderMassKg = 75,
   comHeightM = 1.0,
+  boardThicknessMm = 11,
   leanAngleDeg = DEFAULT_LEAN_DEG,
   maxForceN = DEFAULT_MAX_FORCE_N,
   numSamples = DEFAULT_SAMPLES,
@@ -65,7 +68,7 @@ const SteeringMomentChart: React.FC<SteeringMomentChartProps> = ({
         truck.pivotAxisAngle,
         truck.rake,
         truck.axleToBaseplateDistance,
-        truck.baseplateToBoard,
+        boardThicknessMm + truck.baseplateToBoard,
         leanAngleDeg,
         -maxForceN,
         maxForceN,
@@ -89,7 +92,17 @@ const SteeringMomentChart: React.FC<SteeringMomentChartProps> = ({
           'M_steer: %{y:.3f} N·m<extra></extra>',
       }
     })
-  }, [setups, riderMassKg, comHeightM, leanAngleDeg, maxForceN, numSamples, activeSetupId, keyGeometryCurves])
+  }, [
+    setups,
+    riderMassKg,
+    comHeightM,
+    boardThicknessMm,
+    leanAngleDeg,
+    maxForceN,
+    numSamples,
+    activeSetupId,
+    keyGeometryCurves,
+  ])
 
   return (
     <Plot

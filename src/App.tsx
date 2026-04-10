@@ -48,6 +48,7 @@ function generateId(): string {
 /** Default rider parameters: 75kg rider, 1.0m CoM height. */
 const DEFAULT_RIDER_PARAMS: RiderParams = {
   massKg: 75,
+  boardThicknessMm: 11,
   comHeightM: 1.0,
 }
 
@@ -85,15 +86,15 @@ function buildInitialState(): {
 // Shared SVG scale
 // ─────────────────────────────────────────────────────────────────────────────
 
-function computeRequiredSideVerticalExtentMm(setup: BoardSetupConfig): number {
+function computeRequiredSideVerticalExtentMm(setup: BoardSetupConfig, boardThicknessMm: number): number {
   const truck = setup.frontTruck
-  const dBoard = truck.baseplateToBoard + truck.axleToBaseplateDistance
+  const dBoard = boardThicknessMm + truck.baseplateToBoard + truck.axleToBaseplateDistance
   return dBoard + truck.wheelDiameter / 2 + 30
 }
 
-function computeRequiredFrontVerticalExtentMm(setup: BoardSetupConfig): number {
+function computeRequiredFrontVerticalExtentMm(setup: BoardSetupConfig, boardThicknessMm: number): number {
   const truck = setup.frontTruck
-  const dBoard = truck.baseplateToBoard + truck.axleToBaseplateDistance
+  const dBoard = boardThicknessMm + truck.baseplateToBoard + truck.axleToBaseplateDistance
   return dBoard + truck.wheelDiameter / 2 + 20
 }
 
@@ -137,8 +138,8 @@ const App: React.FC = () => {
   const [verticalExtentBucketMm, setVerticalExtentBucketMm] = useState<number>(() => {
     const initialSetup = initial.setups[0]
     return Math.max(
-      computeRequiredSideVerticalExtentMm(initialSetup),
-      computeRequiredFrontVerticalExtentMm(initialSetup),
+      computeRequiredSideVerticalExtentMm(initialSetup, initial.riderParams.boardThicknessMm),
+      computeRequiredFrontVerticalExtentMm(initialSetup, initial.riderParams.boardThicknessMm),
     )
   })
 
@@ -166,10 +167,10 @@ const App: React.FC = () => {
   const requiredExtentMm = useMemo(() => {
     // Shared vertical reference for both Side and Front views.
     return Math.max(
-      computeRequiredSideVerticalExtentMm(activeSetup),
-      computeRequiredFrontVerticalExtentMm(activeSetup),
+      computeRequiredSideVerticalExtentMm(activeSetup, riderParams.boardThicknessMm),
+      computeRequiredFrontVerticalExtentMm(activeSetup, riderParams.boardThicknessMm),
     )
-  }, [activeSetup])
+  }, [activeSetup, riderParams.boardThicknessMm])
 
   useEffect(() => {
     setVerticalExtentBucketMm(prev => quantizeVerticalExtentMm(prev, requiredExtentMm))
@@ -210,7 +211,7 @@ const App: React.FC = () => {
         truck.pivotAxisAngle,
         truck.rake,
         truck.axleToBaseplateDistance,
-        truck.baseplateToBoard,
+        riderParams.boardThicknessMm + truck.baseplateToBoard,
         truck.roadsideBushing,
         truck.boardsideBushing,
         riderParams.massKg,
@@ -228,7 +229,7 @@ const App: React.FC = () => {
         curve,
       }
     })
-  }, [setups, riderParams.massKg, riderParams.comHeightM])
+  }, [setups, riderParams.massKg, riderParams.comHeightM, riderParams.boardThicknessMm])
 
   // ── Setup mutation handlers ────────────────────────────────────────────────
 
@@ -344,6 +345,7 @@ const App: React.FC = () => {
                 height={sharedViewHeightPx}
                 pixelsPerMm={sharedPpm}
                 groundOffsetPx={sharedGroundOffsetPx}
+                boardThicknessMm={riderParams.boardThicknessMm}
               />
             </div>
 
@@ -355,6 +357,7 @@ const App: React.FC = () => {
                   activeSetupId={activeSetupId}
                   width={500}
                   height={sharedViewHeightPx}
+                  boardThicknessMm={riderParams.boardThicknessMm}
                   keyGeometryCurves={keyGeometryCurves}
                 />
               </div>
@@ -369,6 +372,7 @@ const App: React.FC = () => {
                 height={sharedViewHeightPx}
                 pixelsPerMm={sharedPpm}
                 groundOffsetPx={sharedGroundOffsetPx}
+                boardThicknessMm={riderParams.boardThicknessMm}
                 keyGeometryCurves={keyGeometryCurves}
                 leanAngleDeg={steeringLeanAngleDeg}
                 onLeanAngleChange={setSteeringLeanAngleDeg}
@@ -383,6 +387,7 @@ const App: React.FC = () => {
                 setups={setups}
                 riderMassKg={riderParams.massKg}
                 comHeightM={riderParams.comHeightM}
+                boardThicknessMm={riderParams.boardThicknessMm}
                 activeSetupId={activeSetupId}
                 keyGeometryCurves={keyGeometryCurves}
               />
@@ -392,6 +397,7 @@ const App: React.FC = () => {
                 setups={setups}
                 riderMassKg={riderParams.massKg}
                 comHeightM={riderParams.comHeightM}
+                boardThicknessMm={riderParams.boardThicknessMm}
                 activeSetupId={activeSetupId}
                 keyGeometryCurves={keyGeometryCurves}
               />
@@ -401,6 +407,7 @@ const App: React.FC = () => {
                 setups={setups}
                 riderMassKg={riderParams.massKg}
                 comHeightM={riderParams.comHeightM}
+                boardThicknessMm={riderParams.boardThicknessMm}
                 leanAngleDeg={steeringLeanAngleDeg}
                 activeSetupId={activeSetupId}
                 keyGeometryCurves={keyGeometryCurves}
@@ -411,6 +418,7 @@ const App: React.FC = () => {
                 setups={setups}
                 riderMassKg={riderParams.massKg}
                 comHeightM={riderParams.comHeightM}
+                boardThicknessMm={riderParams.boardThicknessMm}
                 activeSetupId={activeSetupId}
                 keyGeometryCurves={keyGeometryCurves}
               />
@@ -424,6 +432,7 @@ const App: React.FC = () => {
                 setups={setups}
                 riderMassKg={riderParams.massKg}
                 comHeightM={riderParams.comHeightM}
+                boardThicknessMm={riderParams.boardThicknessMm}
                 activeSetupId={activeSetupId}
                 keyGeometryCurves={keyGeometryCurves}
               />
@@ -433,6 +442,7 @@ const App: React.FC = () => {
                 setups={setups}
                 riderMassKg={riderParams.massKg}
                 comHeightM={riderParams.comHeightM}
+                boardThicknessMm={riderParams.boardThicknessMm}
                 activeSetupId={activeSetupId}
                 keyGeometryCurves={keyGeometryCurves}
               />
