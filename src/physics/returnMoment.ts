@@ -138,14 +138,14 @@ export function computeKeyGeometry(
   //compute the effective rotation center height, i.e. the place where pivot and the hanger's vertical rotation axis intersect
   //This is measured from the axle (Y=0), not from ground
   //Positive rake moves the effective rotation center UP from the axle
-  const invPendulumHeight = axleToBaseplateDistance + rake / Math.cos(pivotAxisAngleRad)
+  const invPendulumHeight = axleToBaseplateDistance+baseplateToBoard - rake / Math.cos(pivotAxisAngleRad)
 
 
   const riderForce = riderMassKg * G
-  const centerOfBoardY = invPendulumHeight * Math.sin(leanRad)
-  const centerOfBoardZ = invPendulumHeight * Math.cos(leanRad)
-  const centerOfForceY = bushingTorqueNm / riderForce
-  const centerOfForceZ = centerOfBoardZ + (centerOfBoardY - centerOfBoardZ) * Math.tan(leanRad) 
+  const centerOfBoardY = invPendulumHeight * Math.cos(leanRad)
+  const centerOfBoardZ = invPendulumHeight * Math.sin(leanRad)
+  const centerOfForceY = centerOfBoardY + (centerOfBoardZ - centerOfBoardY) * Math.tan(leanRad) 
+  const centerOfForceZ = bushingTorqueNm / riderForce
   const centerOfForceAngle = Math.atan2(centerOfForceY, invPendulumHeight)
   const centerOfForceRadius = Math.sqrt(centerOfForceY*centerOfForceY + centerOfForceZ+centerOfForceZ)
   const weightGeometricStiffness = 0 - centerOfForceRadius * riderForce * Math.sin(centerOfForceAngle)
