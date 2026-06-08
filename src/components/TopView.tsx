@@ -150,6 +150,12 @@ const TopView: React.FC<TopViewProps> = ({
     originY + physX * icrScale, // X forward = downward on screen
   ]
 
+  // Precompute board outline dimensions for the reference setup (drawn once)
+  const refHalfTrack = refSetup.frontTruck.trackWidth / 2
+  const [refBoardLeft, refBoardTop] = toSVG(0, -refHalfTrack)
+  const refBoardWidthPx = refSetup.frontTruck.trackWidth * icrScale
+  const refBoardHeightPx = refSetup.wheelbase * icrScale
+
   // ── Compute / retrieve ICR curves for every setup ─────────────────────────
   // eslint-disable-next-line react-hooks/rules-of-hooks
   const icrData = useMemo(() => {
@@ -201,6 +207,20 @@ const TopView: React.FC<TopViewProps> = ({
         Top View (XZ) — ICR Locus
       </text>
 
+      {/* Board outline — drawn once for the reference setup */}
+      <rect
+        x={refBoardLeft}
+        y={refBoardTop}
+        width={refBoardWidthPx}
+        height={refBoardHeightPx}
+        fill={refSetup.color}
+        fillOpacity={0.05}
+        stroke={refSetup.color}
+        strokeWidth={1.5}
+        strokeOpacity={0.4}
+        rx={3}
+      />
+
       {/* Render each setup — clipped to viewport */}
       <g clipPath="url(#topview-clip)">
       {icrData.map(({ setup, curve }) => {
@@ -208,12 +228,6 @@ const TopView: React.FC<TopViewProps> = ({
         const opacity = isActive || !activeSetupId ? 1 : 0.3
         const wb = setup.wheelbase
         const halfTrack = setup.frontTruck.trackWidth / 2
-
-        // Board outline — after 90° CCW: X→vertical, Z→horizontal
-        // top-left corner of the rect is at physX=0 (front), physZ=-halfTrack (toe side)
-        const [boardLeft, boardTop] = toSVG(0, -halfTrack)
-        const boardWidthPx = setup.frontTruck.trackWidth * icrScale // horizontal (Z direction)
-        const boardHeightPx = wb * icrScale                         // vertical   (X direction)
 
         // Front axle endpoints
         const [frontAxleX1, frontAxleY1] = toSVG(0, -halfTrack)
@@ -241,49 +255,7 @@ const TopView: React.FC<TopViewProps> = ({
 
         return (
           <g key={setup.id} opacity={opacity}>
-            {/* Board outline */}
-            <rect
-              x={boardLeft}
-              y={boardTop}
-              width={boardWidthPx}
-              height={boardHeightPx}
-              fill={setup.color}
-              fillOpacity={0.05}
-              stroke={setup.color}
-              strokeWidth={isActive ? 1.5 : 0.8}
-              strokeOpacity={0.4}
-              rx={3}
-            />
 
-            {/* Front axle */}
-            <line
-              x1={frontAxleX1}
-              y1={frontAxleY1}
-              x2={frontAxleX2}
-              y2={frontAxleY2}
-              stroke={setup.color}
-              strokeWidth={isActive ? 2.5 : 1.5}
-              opacity={0.9}
-            />
-            {/* Front axle centre dot */}
-            <circle
-              cx={(frontAxleX1 + frontAxleX2) / 2}
-              cy={(frontAxleY1 + frontAxleY2) / 2}
-              r={3}
-              fill={setup.color}
-            />
-
-            {/* Rear axle (dashed) */}
-            <line
-              x1={rearAxleX1}
-              y1={rearAxleY1}
-              x2={rearAxleX2}
-              y2={rearAxleY2}
-              stroke={setup.color}
-              strokeWidth={isActive ? 2 : 1.2}
-              opacity={0.7}
-              strokeDasharray="4 2"
-            />
 
             {/* ICR locus — positive-Z branch (heel lean) */}
             {posPoints.length > 1 && (
@@ -318,7 +290,7 @@ const TopView: React.FC<TopViewProps> = ({
       {(() => {
         const wb = refSetup.wheelbase
         // Place annotation to the right of the board
-        const offsetZmm = refSetup.frontTruck.trackWidth / 2 + 12
+        const offsetZmm = -200 - refSetup.frontTruck.trackWidth / 2
         const [annotX, frontY] = toSVG(0,  offsetZmm)
         const [,        rearY] = toSVG(wb, offsetZmm)
         return (
@@ -330,12 +302,12 @@ const TopView: React.FC<TopViewProps> = ({
             {/* tick at rear axle */}
             <line x1={annotX - 4} y1={rearY} x2={annotX + 4} y2={rearY} stroke={UI_TEXT_MUTED} strokeWidth={1} />
             <text
-              x={annotX + 8}
+              x={annotX - 20}
               y={(frontY + rearY) / 2 + 4}
               fill={UI_TEXT_MUTED}
               fontSize={9}
               fontFamily="monospace"
-              textAnchor="start"
+              textAnchor="end"
             >
               L={wb}mm
             </text>

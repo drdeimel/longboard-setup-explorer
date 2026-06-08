@@ -441,7 +441,7 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
                       <SliderRow
                         label="Pivot axis angle α"
                         value={setup.frontTruck.pivotAxisAngle}
-                        min={20}
+                        min={1}
                         max={75}
                         step={0.5}
                         unit="°"
@@ -533,7 +533,7 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
                       <SliderRow
                         label="Pivot axis angle α"
                         value={setup.rearTruck.pivotAxisAngle}
-                        min={20}
+                        min={1}
                         max={75}
                         step={0.5}
                         unit="°"

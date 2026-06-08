@@ -33,8 +33,7 @@ import LeanVsBushingTorqueChart from './components/LeanVsBushingTorqueChart'
 import LeanVsTurningRadiusChart from './components/LeanVsTurningRadiusChart'
 import LeanVsCentripetalAxisChart from './components/LeanVsCentripetalAxisChart'
 import { saveState, loadState } from './persistence/localStorage'
-import { computePivotAxis } from './geometry/pivotAxis'
-import { returnKeyGeometryCurves } from './physics/keyGeometryDataSet'
+import { useKeyGeometryCurves } from './geometry/keyGeometryCache'
 import { TOURS } from './tours/tourDefinitions'
 import TourOverlay from './components/TourOverlay'
 import TourSelector from './components/TourSelector'
@@ -237,35 +236,7 @@ const App: React.FC = () => {
 
   // ── Key Geometry Curves (computed once per setup when config changes) ───────
   const DEFAULT_SAMPLES = 91
-  const keyGeometryCurves = useMemo(() => {
-    return setups.map(setup => {
-      const truck = setup.frontTruck
-      const rearTruck = setup.rearTruck
-      const { direction } = computePivotAxis(truck.pivotAxisAngle, truck.rake)
-      const curve = returnKeyGeometryCurves(
-        direction,
-        truck.pivotAxisAngle,
-        truck.rake,
-        truck.axleToBaseplateDistance,
-        riderParams.boardThicknessMm + truck.baseplateToBoard,
-        truck.roadsideBushing,
-        truck.boardsideBushing,
-        riderParams.massKg,
-        riderParams.comHeightM,
-        -DEFAULT_MAX_LEAN,
-        DEFAULT_MAX_LEAN,
-        DEFAULT_SAMPLES,
-        rearTruck.pivotAxisAngle,
-        rearTruck.rake,
-        setup.wheelbase,
-      )
-      return {
-        setupId: setup.id,
-        maxLeanDeg: DEFAULT_MAX_LEAN,
-        curve,
-      }
-    })
-  }, [setups, riderParams.massKg, riderParams.comHeightM, riderParams.boardThicknessMm])
+  const keyGeometryCurves = useKeyGeometryCurves(setups, riderParams)
 
   // ── Setup mutation handlers ────────────────────────────────────────────────
 
@@ -391,6 +362,7 @@ const App: React.FC = () => {
                 groundOffsetPx={sharedGroundOffsetPx}
                 boardThicknessMm={riderParams.boardThicknessMm}
                 keyGeometryCurves={keyGeometryCurves}
+                activeSetupId={activeSetupId}
                 leanAngleDeg={steeringLeanAngleDeg}
                 onLeanAngleChange={setSteeringLeanAngleDeg}
               />

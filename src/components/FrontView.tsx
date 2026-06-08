@@ -49,6 +49,8 @@ interface FrontViewProps {
   groundOffsetPx?: number
   /** Pre-computed key geometry curves from parent (maxLeanDeg is the global DEFAULT_MAX_LEAN). */
   keyGeometryCurves?: { setupId: string; maxLeanDeg: number; curve: KeyGeometryResult[] }[]
+  /** ID of the currently active setup, used to select the correct curve. */
+  activeSetupId?: string
   /** Board lean angle for tilting the board visualization (degrees). */
   leanAngleDeg?: number
   /** Callback when user drags the board point to change lean angle. */
@@ -74,6 +76,7 @@ const FrontView: React.FC<FrontViewProps> = ({
   pixelsPerMm,
   groundOffsetPx = 20,
   keyGeometryCurves,
+  activeSetupId,
   leanAngleDeg = 0,
   onLeanAngleChange,
   boardThicknessMm = 11,
@@ -136,10 +139,11 @@ const FrontView: React.FC<FrontViewProps> = ({
   let rotCenterY = 0
   let effectiveLeanAngleDeg = leanAngleDeg
 
-  if (keyGeometryCurves && keyGeometryCurves[0]?.curve) {
-    const curve = keyGeometryCurves[0].curve
+  const activeCurve = keyGeometryCurves?.find(c => c.setupId === activeSetupId)?.curve
+
+  if (activeCurve) {
     // Find the entry closest to the current lean angle
-    const closestEntry = curve.reduce((prev, curr) =>
+    const closestEntry = activeCurve.reduce((prev, curr) =>
       Math.abs(curr.leanAngleDeg - leanAngleDeg) < Math.abs(prev.leanAngleDeg - leanAngleDeg) ? curr : prev
     )
     invPendulumHeight = closestEntry.invPendulumHeight
@@ -151,6 +155,7 @@ const FrontView: React.FC<FrontViewProps> = ({
     centerForceY = closestEntry.centerOfForceY + rotCenterY
     effectiveLeanAngleDeg = closestEntry.leanAngleDeg
   } else {
+    // Fallback to direct computation if curves are not available
     const truckGeom = computeTruckGeometry(
       truck.axleToBaseplateDistance,
       truck.baseplateToBoard,
@@ -158,7 +163,7 @@ const FrontView: React.FC<FrontViewProps> = ({
       truck.rake,
       truck.pivotAxisAngle,
     )
-    invPendulumHeight = truckGeom.invPendulumHeight
+    invPendulumHeight = truckGeom.invPendulumHeight +40
     rotCenterY = truckGeom.rotCenterY
   }
 

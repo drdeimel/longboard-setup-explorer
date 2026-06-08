@@ -132,10 +132,11 @@ export function computeICR(
   const δFRad = (δFront * Math.PI) / 180
   const δRRad = (δRear * Math.PI) / 180
 
-  //compute the X, where the board is tangential to the turning circle
+  //compute the point where the board is tangential to the turning circle
   // = felt center of turning of the board
-  const cc = (Math.cos(δFRad))/(Math.cos(δRRad))
-  const icrX = wheelbase * cc / (1+cc)
+  //law of equal triangles: ratio of sines = ratio of distance front to distance rear
+  const cc = (Math.sin(δRRad))/(Math.sin(δFRad))
+  const icrX = wheelbase / (1+cc)
 
   //once we know X, we can compute curvature:
   const turningCurvature = Math.tan(δFRad) / icrX
