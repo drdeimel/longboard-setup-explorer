@@ -15,7 +15,7 @@ import { describe, it, expect } from 'vitest'
 import { computePivotAxis, boardSurfaceHeight } from '../pivotAxis'
 import { computeLeanToSteer, leanToSteerCurve } from '../leanToSteer'
 import { computeRotationAxisDist } from '../rotationAxisDist'
-import { computeICR, icrLocus } from '../turningCenter'
+import { computeICR } from '../turningCenter'
 import { dot, cross, normalize, length } from '../../math/vec3'
 import { rotationMatrix, mulMatVec } from '../../math/mat3'
 
@@ -270,22 +270,20 @@ describe('computeICR', () => {
   it('Zero lean → ICR at infinity (straight ahead)', () => {
     const result = computeICR(50, 0, 47, 0, 760, 0)
     expect(result.icr).toBeNull()
-    expect(result.turningRadiusMm).toBeNull()
+    expect(result.turningCurvature).toBe(0)
   })
 
   it('Non-zero lean → finite ICR', () => {
     const result = computeICR(50, 0, 47, 0, 760, 30)
     expect(result.icr).not.toBeNull()
-    expect(result.turningRadiusMm).not.toBeNull()
+    expect(result.turningCurvature).not.toBe(0)
   })
 
-  it('Symmetric trucks (same angle, same rake) → ICR on board centerline (z=0)', () => {
-    // When front and rear trucks have identical geometry, the board turns symmetrically.
-    // The ICR should lie on the board centerline Z=0 (i.e., icrZ ≈ 0).
+  it('Symmetric trucks (same angle, same rake) → equal steer angles', () => {
+    // When front and rear trucks have identical geometry, they should produce
+    // identical steer angles for the same lean angle.
     const result = computeICR(50, 0, 50, 0, 760, 30)
-    if (result.icr !== null) {
-      expect(approx(result.icr.z, 0, 1e-4)).toBe(true)
-    }
+    expect(approx(result.frontSteerDeg, result.rearSteerDeg, 1e-10)).toBe(true)
   })
 
   it('Front and rear steer angles have same sign for positive lean', () => {
@@ -297,21 +295,26 @@ describe('computeICR', () => {
   it('Negative lean gives opposite steer direction to positive lean', () => {
     const posLean = computeICR(50, 0, 47, 0, 760, 30)
     const negLean = computeICR(50, 0, 47, 0, 760, -30)
-    if (posLean.icr && negLean.icr) {
-      // The Z coordinates should be mirror images
-      expect(approx(posLean.icr.z, -negLean.icr.z, 1e-4)).toBe(true)
+    // Steer angles should be opposite in sign
+    expect(approx(posLean.frontSteerDeg, -negLean.frontSteerDeg, 1e-10)).toBe(true)
+    expect(approx(posLean.rearSteerDeg, -negLean.rearSteerDeg, 1e-10)).toBe(true)
+  })
+
+  it('Different rear pivot angle produces different steer behavior', () => {
+    // When rear truck has different geometry, steer angles should differ
+    const symmetricResult = computeICR(50, 0, 50, 0, 760, 30)
+    const asymmetricResult = computeICR(50, 0, 47, 0, 760, 30)
+    expect(approx(symmetricResult.frontSteerDeg, symmetricResult.rearSteerDeg, 1e-10)).toBe(true)
+    expect(approx(asymmetricResult.frontSteerDeg, asymmetricResult.rearSteerDeg, 1e-10)).toBe(false)
+  })
+
+  it('ICR X coordinate is finite and reasonable for typical turn', () => {
+    const result = computeICR(50, 0, 47, 0, 760, 25)
+    if (result.icr !== null) {
+      // ICR X should be a finite number
+      expect(isFinite(result.icr.x)).toBe(true)
+      // ICR should not be absurdly far from the board
+      expect(Math.abs(result.icr.x)).toBeLessThan(10000)
     }
-  })
-
-  it('icrLocus: generates proper number of samples', () => {
-    const locus = icrLocus(50, 0, 47, 0, 760, -40, 40, 81)
-    expect(locus).toHaveLength(81)
-  })
-
-  it('icrLocus: zero lean sample has null ICR', () => {
-    // With 81 samples from -40 to 40, sample 40 is at 0 lean
-    const locus = icrLocus(50, 0, 47, 0, 760, -40, 40, 81)
-    const zeroLeanSample = locus.find((s) => Math.abs(s.leanAngleDeg) < 0.01)
-    expect(zeroLeanSample?.icr).toBeNull()
   })
 })

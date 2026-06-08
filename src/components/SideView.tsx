@@ -21,6 +21,7 @@
 import React from 'react'
 import type { TruckConfig } from '../models/TruckConfig'
 import { computePivotAxis, boardSurfaceHeight } from '../geometry/pivotAxis'
+import { computeInvPendulumHeight, DISPLAY_GEOMETRY_WIDTH_MM } from '../physics/keyGeometryDataSet'
 import { UI_TEXT_MUTED, UI_TEXT_PRIMARY, UI_TEXT_SECONDARY } from '../theme/uiColors'
 
 /** Props for the SideView component. */
@@ -79,7 +80,7 @@ const SideView: React.FC<SideViewProps> = ({
   // The geometry spans from −wheelDiameter/2 (ground) to +dBoard (board surface)
   // horizontally we'll show some range around origin
   const geometryHeightMm = dBoard + truck.wheelDiameter / 2 + 20 // margin
-  const geometryWidthMm = 200 // ±100 mm from axle
+  const geometryWidthMm = DISPLAY_GEOMETRY_WIDTH_MM // ±100 mm from axle
 
   const ppm = pixelsPerMm ?? Math.min(
     (width - 40) / geometryWidthMm,
@@ -165,26 +166,40 @@ const SideView: React.FC<SideViewProps> = ({
   const [rakeEndX, rakeEndY] = toSVG(axisPoint[0], axisPoint[1])
 
   // Annotation: pivot axis angle arc
+  // Draw the arc at the pivot axis ground intersection point, showing the
+  // angle between the pivot axis and the ground plane (horizontal)
   const arcRadius = 40 * ppm
   const alphaDeg = truck.pivotAxisAngle
   const alphaRad = (alphaDeg * Math.PI) / 180
-  // Arc from 0° to alpha (in SVG coordinates, angles are clockwise from +x)
-  // In physics α is measured from horizontal (+X), but SVG y is flipped
-  // so we draw from (ppm*arcRadius,0) rotating up by angleDeg (= -alphaRad in SVG)
-  const arcEndX = originX + arcRadius * Math.cos(alphaRad)
-  const arcEndY = originY - arcRadius * Math.sin(alphaRad) // SVG y flip
+  // Arc center is at the pivot axis ground intersection point
+  const arcCenterX = svgAxNeg
+  const arcCenterY = svgAyNeg
+  // Arc starts along the ground (horizontal right) and sweeps up to the pivot axis
+  const arcStartX = arcCenterX + arcRadius
+  const arcStartY = arcCenterY
+  const arcEndX = arcCenterX + arcRadius * Math.cos(alphaRad)
+  const arcEndY = arcCenterY - arcRadius * Math.sin(alphaRad) // SVG y flip
 
   // Effective rotation center (intersection of pivot axis and hanger vertical rotation axis)
   // This is measured from the axle (Y=0), not from ground
   // At rake=0, this equals axleToBaseplateDistance (height of pivot point above axle)
   // Positive rake moves the effective rotation center UP from the axle
-  const pivotAxisAngleRad = (truck.pivotAxisAngle * Math.PI) / 180
-  const invPendulumHeight =
-    truck.baseplateToBoard +
-    boardThicknessMm +
-    truck.axleToBaseplateDistance -
-    truck.rake / Math.cos(pivotAxisAngleRad)
+  const invPendulumHeight = computeInvPendulumHeight(
+    truck.axleToBaseplateDistance,
+    truck.baseplateToBoard,
+    boardThicknessMm,
+    truck.rake,
+    truck.pivotAxisAngle,
+  )
   const [, effectiveRotCenterY] = toSVG(0, dBoard - invPendulumHeight)
+
+  // Trailing: horizontal distance from wheel contact patch (x=0) to where
+  // the pivot axis intersects the ground plane (y = -wheelRadius)
+  // axNeg is the x-coordinate of the pivot axis ground intersection point
+  const trailingMm = Math.abs(axNeg)
+  const trailingIndicatorY = groundY + 15
+  const [trailingStartX] = toSVG(0, -wheelRadius) // wheel contact patch x
+  const trailingEndX = svgAxNeg // pivot axis ground intersection x
 
   return (
     <svg
@@ -280,7 +295,7 @@ const SideView: React.FC<SideViewProps> = ({
       )}
 
       {/* invPendulum dimension: distance from board to rotation axis intersection point */}
-      <>
+      <g data-tour="side-view-inv-pendulum">
         {/* Vertical dimension line from board surface down to effective rotation center */}
         <line
           x1={originX + 50}
@@ -303,7 +318,7 @@ const SideView: React.FC<SideViewProps> = ({
         >
           {invPendulumHeight.toFixed(1)}mm
         </text>
-      </>
+      </g>
 
       {/* Axle center crosshair */}
       <line
@@ -337,26 +352,28 @@ const SideView: React.FC<SideViewProps> = ({
       />
 
       {/* Effective rotation center (intersection point) */}
-      <circle
-        cx={axleSvgX}
-        cy={effectiveRotCenterY}
-        r={5}
-        fill={color}
-        stroke="#ffffff"
-        strokeWidth={1.5}
-        opacity={0.9}
-      />
+      <g data-tour="side-view-rotation-center">
+        <circle
+          cx={axleSvgX}
+          cy={effectiveRotCenterY}
+          r={5}
+          fill={color}
+          stroke="#ffffff"
+          strokeWidth={1.5}
+          opacity={0.9}
+        />
+      </g>
 
       {/* Pivot angle arc annotation */}
       <path
-        d={`M ${originX + arcRadius} ${originY} A ${arcRadius} ${arcRadius} 0 0 0 ${arcEndX} ${arcEndY}`}
+        d={`M ${arcStartX} ${arcStartY} A ${arcRadius} ${arcRadius} 0 0 0 ${arcEndX} ${arcEndY}`}
         fill="none"
         stroke={UI_TEXT_PRIMARY}
         strokeWidth={1}
       />
       <text
-        x={originX + arcRadius * Math.cos(alphaRad / 2) + 4}
-        y={originY - arcRadius * Math.sin(alphaRad / 2)}
+        x={arcCenterX + arcRadius * Math.cos(alphaRad / 2) + 4}
+        y={arcCenterY - arcRadius * Math.sin(alphaRad / 2)}
         fill={UI_TEXT_PRIMARY}
         fontSize={10}
         fontFamily="monospace"
@@ -409,6 +426,31 @@ const SideView: React.FC<SideViewProps> = ({
       >
         r={truck.wheelDiameter / 2}
       </text>
+
+      {/* Trailing dimension: horizontal distance from wheel contact patch to pivot axis ground intersection */}
+      <g data-tour="side-view-trailing">
+        <line
+          x1={trailingStartX}
+          y1={trailingIndicatorY}
+          x2={trailingEndX}
+          y2={trailingIndicatorY}
+          stroke="#22d3ee"
+          strokeWidth={1.5}
+        />
+        {/* Tick marks */}
+        <line x1={trailingStartX} y1={trailingIndicatorY - 4} x2={trailingStartX} y2={trailingIndicatorY + 4} stroke="#22d3ee" strokeWidth={1} />
+        <line x1={trailingEndX} y1={trailingIndicatorY - 4} x2={trailingEndX} y2={trailingIndicatorY + 4} stroke="#22d3ee" strokeWidth={1} />
+        <text
+          x={(trailingStartX + trailingEndX) / 2}
+          y={trailingIndicatorY + 14}
+          fill="#22d3ee"
+          fontSize={9}
+          fontFamily="monospace"
+          textAnchor="middle"
+        >
+          trailing={trailingMm.toFixed(1)}mm
+        </text>
+      </g>
 
       {/* Arrow markers definition */}
       <defs>

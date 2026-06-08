@@ -35,6 +35,9 @@ import LeanVsCentripetalAxisChart from './components/LeanVsCentripetalAxisChart'
 import { saveState, loadState } from './persistence/localStorage'
 import { computePivotAxis } from './geometry/pivotAxis'
 import { returnKeyGeometryCurves } from './physics/keyGeometryDataSet'
+import { TOURS } from './tours/tourDefinitions'
+import TourOverlay from './components/TourOverlay'
+import TourSelector from './components/TourSelector'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Default state
@@ -132,7 +135,40 @@ const App: React.FC = () => {
   const [steeringLeanAngleDeg, setSteeringLeanAngleDeg] = useState<number>(
     initial.steeringLeanAngleDeg,
   )
-  const [topViewCollapsed, setTopViewCollapsed] = useState<boolean>(false)
+  // ── Tour state ─────────────────────────────────────────────────────────────
+  const [activeTourId, setActiveTourId] = useState<string | null>(null)
+  const [currentStep, setCurrentStep] = useState<number>(0)
+
+  const activeTour = TOURS.find(t => t.id === activeTourId) ?? null
+  const isTourRunning = activeTour !== null
+
+  const handleStartTour = useCallback((tourId: string) => {
+    setActiveTourId(tourId)
+    setCurrentStep(0)
+  }, [])
+
+  const handleTourNext = useCallback(() => {
+    if (!activeTour) return
+    if (currentStep < activeTour.steps.length - 1) {
+      setCurrentStep(prev => prev + 1)
+    } else {
+      // Last step — finish tour
+      setActiveTourId(null)
+      setCurrentStep(0)
+    }
+  }, [activeTour, currentStep])
+
+  const handleTourPrev = useCallback(() => {
+    if (currentStep > 0) {
+      setCurrentStep(prev => prev - 1)
+    }
+  }, [currentStep])
+
+  const handleTourExit = useCallback(() => {
+    setActiveTourId(null)
+    setCurrentStep(0)
+  }, [])
+
   const diagramsRowRef = useRef<HTMLDivElement | null>(null)
   const [diagramHeightPx, setDiagramHeightPx] = useState<number>(280)
   const [verticalExtentBucketMm, setVerticalExtentBucketMm] = useState<number>(() => {
@@ -189,7 +225,7 @@ const App: React.FC = () => {
     const observer = new ResizeObserver(update)
     observer.observe(el)
     return () => observer.disconnect()
-  }, [topViewCollapsed])
+  }, [])
 
   const sharedViewHeightPx = Math.max(220, diagramHeightPx)
   // One floor offset for both views so the dotted ground lines overlap exactly.
@@ -292,19 +328,22 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100 flex flex-col">
       {/* Header */}
-      <header className="flex-shrink-0 px-6 py-3 border-b border-gray-800 bg-gray-900">
-        <h1 className="text-xl font-bold tracking-tight text-slate-100">
-          Longboard Truck Simulator
-        </h1>
-        <p className="text-xs text-slate-300 mt-0.5">
-          Interactive visualization of truck geometry and physics
-        </p>
+      <header className="flex-shrink-0 px-6 py-3 border-b border-gray-800 bg-gray-900 flex items-center justify-between">
+        <div data-tour="header-title">
+          <h1 className="text-xl font-bold tracking-tight text-slate-100">
+            Longboard Truck Geometry Explorer
+          </h1>
+          <p className="text-xs text-slate-300 mt-0.5">
+            Interactive visualization of truck geometry and physics. Your place to finally understand truck setups
+          </p>
+        </div>
+        <TourSelector tours={TOURS} onStartTour={handleStartTour} />
       </header>
 
       {/* Main two-column layout */}
       <div className="flex flex-1 overflow-hidden">
         {/* ── Left: Config Panel ── */}
-        <aside className="w-96 flex-shrink-0 border-r border-gray-800 overflow-y-auto" data-testid="config-panel">
+        <aside className="w-96 flex-shrink-0 border-r border-gray-800 overflow-y-auto" data-testid="config-panel" data-tour="config-panel">
           <ConfigPanel
             setups={setups}
             activeSetupId={activeSetupId}
@@ -322,22 +361,14 @@ const App: React.FC = () => {
 
         {/* ── Right: Diagrams + Charts ── */}
         <main className="flex-1 overflow-y-auto p-4 space-y-4">
-          {/* Header row with collapse toggle */}
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-medium text-gray-200 ml-1">Truck Diagrams</h2>
-            <button
-              onClick={() => setTopViewCollapsed(!topViewCollapsed)}
-              className="text-xs px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-200 hover:text-white transition-colors"
-              title={topViewCollapsed ? 'Show Top View (ICR)' : 'Hide Top View'}
-            >
-              {topViewCollapsed ? 'Show ICR ▶' : 'Hide ICR ▼'}
-            </button>
           </div>
 
-          {/* Row 1: SVG diagrams - keep Side/Front frame widths symmetric in both layouts */}
-          <div ref={diagramsRowRef} className={`grid gap-1 ${topViewCollapsed ? 'grid-cols-2' : 'grid-cols-6'}`}>
+          {/* Row 1: Side/Front SVG diagrams */}
+          <div ref={diagramsRowRef} className="grid grid-cols-2 gap-4">
             {/* Side View */}
-            <div className={topViewCollapsed ? 'col-span-1 w-full' : 'col-span-2 w-full'}>
+            <div className="col-span-1 w-full" data-tour="side-view">
               <SideView
                 truck={activeSetup.frontTruck}
                 color={activeSetup.color}
@@ -349,22 +380,8 @@ const App: React.FC = () => {
               />
             </div>
 
-            {/* Top View (ICR locus) - collapsible */}
-            {!topViewCollapsed && (
-              <div className="col-span-2 w-full">
-                <TopView
-                  setups={setups}
-                  activeSetupId={activeSetupId}
-                  width={500}
-                  height={sharedViewHeightPx}
-                  boardThicknessMm={riderParams.boardThicknessMm}
-                  keyGeometryCurves={keyGeometryCurves}
-                />
-              </div>
-            )}
-
             {/* Front View */}
-            <div className={topViewCollapsed ? 'col-span-1 w-full' : 'col-span-2 w-full'}>
+            <div className="col-span-1 w-full" data-tour="front-view">
               <FrontView
                 truck={activeSetup.frontTruck}
                 color={activeSetup.color}
@@ -382,7 +399,17 @@ const App: React.FC = () => {
 
           {/* Row 2: Charts grid */}
           <div className="grid grid-cols-2 gap-4">
-            <div className="h-64">
+            <div className="h-64" data-tour="top-view">
+              <TopView
+                setups={setups}
+                activeSetupId={activeSetupId}
+                width={640}
+                height={256}
+                boardThicknessMm={riderParams.boardThicknessMm}
+                keyGeometryCurves={keyGeometryCurves}
+              />
+            </div>
+            <div className="h-64" data-tour="lean-vs-steer">
               <LeanVsSteerChart
                 setups={setups}
                 riderMassKg={riderParams.massKg}
@@ -450,6 +477,17 @@ const App: React.FC = () => {
           </div>
         </main>
       </div>
+
+      {/* Tour overlay — rendered only when a tour is active */}
+      {isTourRunning && activeTour && (
+        <TourOverlay
+          tour={activeTour}
+          currentStep={currentStep}
+          onNext={handleTourNext}
+          onPrev={handleTourPrev}
+          onExit={handleTourExit}
+        />
+      )}
     </div>
   )
 }

@@ -22,6 +22,7 @@
 import React, { useState } from 'react'
 import type { TruckConfig } from '../models/TruckConfig'
 import { boardSurfaceHeight } from '../geometry/pivotAxis'
+import { computeInvPendulumHeight, DISPLAY_WHEEL_OFFSET_MM, DISPLAY_WHEEL_WIDTH_MM, DISPLAY_BOARD_HALF_WIDTH_MM } from '../physics/keyGeometryDataSet'
 import type { KeyGeometryResult } from '../physics/keyGeometryDataSet'
 import { UI_TEXT_MUTED, UI_TEXT_PRIMARY, UI_TEXT_SECONDARY } from '../theme/uiColors'
 
@@ -106,12 +107,11 @@ const FrontView: React.FC<FrontViewProps> = ({
   ]
 
   const groundY = originY + truck.wheelDiameter / 2 * ppm
-  const wheelWidthMm = 52 // fixed wheel width for front-view indicator
-  const wheelWidth = wheelWidthMm * ppm
+  const wheelWidth = DISPLAY_WHEEL_WIDTH_MM * ppm
   // Match wheel indicator height to actual wheel diameter in this view.
   const wheelHeight = truck.wheelDiameter * ppm
 
-  const wheelOffset = 14 // mm offset from axle center to wheel contact point
+  const wheelOffset = DISPLAY_WHEEL_OFFSET_MM
 
   const [leftWheelX] = toSVG(-halfTrack - wheelOffset, 0)
   const [rightWheelX] = toSVG(halfTrack + wheelOffset, 0)
@@ -134,12 +134,11 @@ const FrontView: React.FC<FrontViewProps> = ({
   let invPendulumHeight = 0
   let rotCenterY = 0
   let effectiveLeanAngleDeg = leanAngleDeg
-  const pivotAxisAngleRad = (truck.pivotAxisAngle * Math.PI) / 180
 
   if (keyGeometryCurves && keyGeometryCurves[0]?.curve) {
     const curve = keyGeometryCurves[0].curve
     // Find the entry closest to the current lean angle
-    const closestEntry = curve.reduce((prev, curr) => 
+    const closestEntry = curve.reduce((prev, curr) =>
       Math.abs(curr.leanAngleDeg - leanAngleDeg) < Math.abs(prev.leanAngleDeg - leanAngleDeg) ? curr : prev
     )
     invPendulumHeight = closestEntry.invPendulumHeight
@@ -151,17 +150,19 @@ const FrontView: React.FC<FrontViewProps> = ({
     centerForceY = closestEntry.centerOfForceY + rotCenterY
     effectiveLeanAngleDeg = closestEntry.leanAngleDeg
   } else {
-    invPendulumHeight =
-      truck.baseplateToBoard +
-      boardThicknessMm +
-      truck.axleToBaseplateDistance -
-      truck.rake / Math.cos(pivotAxisAngleRad)
+    invPendulumHeight = computeInvPendulumHeight(
+      truck.axleToBaseplateDistance,
+      truck.baseplateToBoard,
+      boardThicknessMm,
+      truck.rake,
+      truck.pivotAxisAngle,
+    )
     rotCenterY = dBoard - invPendulumHeight
   }
 
   // Calculate tilted board endpoints
   const leanRad = (effectiveLeanAngleDeg * Math.PI) / 180
-  const boardHalfWidth = 100 // mm half-width of board for visualization
+  const boardHalfWidth = DISPLAY_BOARD_HALF_WIDTH_MM
   const tiltOffsetZ = boardHalfWidth * Math.cos(leanRad)
   const tiltOffsetY = boardHalfWidth * Math.sin(leanRad)
 
@@ -328,18 +329,20 @@ const FrontView: React.FC<FrontViewProps> = ({
           board
         </text>
 
-        <circle cx={rotCenterXSvg} cy={rotCenterYSvg} r={4} fill="#e2e8f0" />
+        <g data-tour="front-view-inv-pendulum">
+          <circle cx={rotCenterXSvg} cy={rotCenterYSvg} r={4} fill="#e2e8f0" />
 
-        {/* Vertical line between board and rotation center */}
-        <line
-          x1={boardCenterXSvg}
-          y1={boardCenterYSvg}
-          x2={rotCenterXSvg}
-          y2={rotCenterYSvg}
-          stroke="#334155"
-          strokeWidth={2}
-          opacity={0.5}
-        />
+          {/* Vertical line between board and rotation center */}
+          <line
+            x1={boardCenterXSvg}
+            y1={boardCenterYSvg}
+            x2={rotCenterXSvg}
+            y2={rotCenterYSvg}
+            stroke="#334155"
+            strokeWidth={2}
+            opacity={0.5}
+          />
+        </g>
 
       </>
 

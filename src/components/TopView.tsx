@@ -53,7 +53,7 @@ const DEFAULT_HEIGHT = 220
 const DEFAULT_SAMPLES = 91
 
 // ICR can be very far from the board — scale to show more area
-const ICR_VIEW_SCALE = 0.08 // pixels per mm — smaller = shows more area
+const ICR_VIEW_SCALE = 0.16 // pixels per mm — 2x scale to make board appear 100% larger
 
 /**
  * Split a flat KeyGeometryResult array into two contiguous sub-arrays by the

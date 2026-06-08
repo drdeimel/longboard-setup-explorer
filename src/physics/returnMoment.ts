@@ -1,6 +1,10 @@
 /**
  * Net return moment computation for the Longboard Simulator.
  *
+ * @deprecated Use keyGeometryDataSet.ts instead - it provides superset functionality
+ * including ICR computation and is the single source of truth for geometry.
+ * This file is kept for backward compatibility but will be removed in a future release.
+ *
  * Combines the bushing restoring torque with the gravitational destabilizing
  * (inverted pendulum) torque to compute the net return moment as a function
  * of board lean angle.

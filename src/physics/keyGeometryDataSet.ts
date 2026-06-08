@@ -35,6 +35,40 @@ import { computeICR } from '../geometry/turningCenter'
 import { computeRotationAxisDist } from '../geometry/rotationAxisDist'
 import type { Vec3 } from '../math/vec3'
 
+/** Default visualization constants for the truck views. */
+export const DISPLAY_WHEEL_OFFSET_MM = 14  // Offset from axle center to wheel contact point
+export const DISPLAY_WHEEL_WIDTH_MM = 52    // Wheel width for front-view indicator
+export const DISPLAY_BOARD_HALF_WIDTH_MM = 100 // Half-width of board for visualization
+export const DISPLAY_GEOMETRY_WIDTH_MM = 200   // Default width for side view geometry box
+export const DISPLAY_BOARD_LINE_PADDING = 20 // Padding for board line in front view
+
+/**
+ * Compute the inverse pendulum height (effective rotation center height).
+ * 
+ * This is the vertical distance from the axle center to the effective rotation
+ * point where the pivot axis intersects the hanger's vertical rotation axis.
+ * 
+ * Formula: invPendulumHeight = axleToBaseplateDistance + baseplateToBoard + boardThicknessMm - rake / cos(α)
+ * 
+ * @param axleToBaseplateDistance - Vertical distance from axle to baseplate (mm)
+ * @param baseplateToBoard - Vertical distance from baseplate to board surface (mm)
+ * @param boardThicknessMm - Board thickness (mm)
+ * @param rake - Rake r (mm)
+ * @param pivotAxisAngleDeg - Pivot axis angle α (degrees)
+ * @returns invPendulumHeight in mm
+ */
+export function computeInvPendulumHeight(
+  axleToBaseplateDistance: number,
+  baseplateToBoard: number,
+  boardThicknessMm: number,
+  rake: number,
+  pivotAxisAngleDeg: number,
+): number {
+  const pivotAxisAngleRad = (pivotAxisAngleDeg * Math.PI) / 180
+  // Note: baseplateToBoard passed from App.tsx already includes boardThicknessMm
+  return axleToBaseplateDistance + baseplateToBoard - rake / Math.cos(pivotAxisAngleRad)
+}
+
 /** Gravitational acceleration in m/s². */
 const G = 9.81
 

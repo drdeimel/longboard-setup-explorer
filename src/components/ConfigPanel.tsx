@@ -342,7 +342,7 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
       <div className="flex-1 overflow-y-auto">
         {/* ── Presets ── */}
         <div className="px-3 py-3 border-b border-slate-800">
-          <p className="text-xs text-slate-300 uppercase tracking-wide mb-2">Load Preset</p>
+          <p className="text-xs text-slate-300 uppercase tracking-wide mb-2">Instantiate from Library:</p>
           <div className="flex flex-wrap gap-2">
             {PRESETS.map(preset => (
               <button
