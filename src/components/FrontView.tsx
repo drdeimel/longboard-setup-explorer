@@ -163,7 +163,7 @@ const FrontView: React.FC<FrontViewProps> = ({
       truck.rake,
       truck.pivotAxisAngle,
     )
-    invPendulumHeight = truckGeom.invPendulumHeight +40
+    invPendulumHeight = truckGeom.invPendulumHeight
     rotCenterY = truckGeom.rotCenterY
   }
 
@@ -342,9 +342,9 @@ const FrontView: React.FC<FrontViewProps> = ({
       </>
 
       {/* Center of board curve */}
-      {keyGeometryCurves && keyGeometryCurves[0]?.curve && (
+      {activeCurve && (
         <path
-          d={keyGeometryCurves[0].curve
+          d={activeCurve
             .map((p, i) => {
               const pointRotCenterY = dBoard - p.invPendulumHeight
               const [sx, sy] = toSVG(p.centerOfBoardZ, p.centerOfBoardY + pointRotCenterY)
@@ -352,17 +352,17 @@ const FrontView: React.FC<FrontViewProps> = ({
             })
             .join(' ')}
           fill="none"
-          stroke={UI_TEXT_MUTED}
+          stroke={color}
           strokeWidth={2}
           strokeDasharray="4 2"
-          opacity={1.0}
+          opacity={0.8}
         />
       )}
 
       {/* Center of force curve */}
-      {keyGeometryCurves && keyGeometryCurves[0]?.curve && (
+      {activeCurve && (
         <path
-          d={keyGeometryCurves[0].curve
+          d={activeCurve
             .map((p, i) => {
               const pointRotCenterY = dBoard - p.invPendulumHeight
               const [sx, sy] = toSVG(p.centerOfForceZ, p.centerOfForceY + pointRotCenterY)
@@ -370,10 +370,10 @@ const FrontView: React.FC<FrontViewProps> = ({
             })
             .join(' ')}
           fill="none"
-          stroke={UI_TEXT_MUTED}
+          stroke={color}
           strokeWidth={2}
           strokeDasharray="2 2"
-          opacity={0.9}
+          opacity={0.6}
         />
       )}
 

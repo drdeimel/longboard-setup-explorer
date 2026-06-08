@@ -138,7 +138,7 @@ export function computeICR(
   const cc = (Math.sin(δRRad))/(Math.sin(δFRad))
   const icrX = wheelbase / (1+cc)
 
-  //once we know X, we can compute curvature:
+  //once we know X, we can compute the normal distance to the ICR:
   const turningCurvature = Math.tan(δFRad) / icrX
   const icrZ = 1/turningCurvature
   

@@ -151,10 +151,21 @@ const TopView: React.FC<TopViewProps> = ({
   ]
 
   // Precompute board outline dimensions for the reference setup (drawn once)
+  // Extend the board by 60mm on both sides (total 120mm extra width)
+  const boardExtensionMm = 60
   const refHalfTrack = refSetup.frontTruck.trackWidth / 2
-  const [refBoardLeft, refBoardTop] = toSVG(0, -refHalfTrack)
-  const refBoardWidthPx = refSetup.frontTruck.trackWidth * icrScale
-  const refBoardHeightPx = refSetup.wheelbase * icrScale
+  const extendedHalfTrack = refHalfTrack + boardExtensionMm
+  
+  const refBoardWidthPx = (refSetup.frontTruck.trackWidth + 2 * boardExtensionMm) * icrScale
+  const refBoardKicktailLengthPx = 0.1 * refSetup.wheelbase * icrScale
+  const refBoardHeightPx = refSetup.wheelbase * icrScale + 2 * refBoardKicktailLengthPx 
+  const [refBoardLeft, refBoardTop] = toSVG(-0.1 * refSetup.wheelbase, -extendedHalfTrack)
+
+  // Precompute side line positions (at actual track width)
+  const [sideLineLeftX, sideLineTopY] = toSVG(0, -refHalfTrack)
+  const [, sideLineBottomY] = toSVG(refSetup.wheelbase, -refHalfTrack)
+  
+  const [sideLineRightX] = toSVG(0, refHalfTrack)
 
   // ── Compute / retrieve ICR curves for every setup ─────────────────────────
   // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -207,7 +218,7 @@ const TopView: React.FC<TopViewProps> = ({
         Top View (XZ) — ICR Locus
       </text>
 
-      {/* Board outline — drawn once for the reference setup */}
+      {/* Board outline — drawn once for the reference setup, extended by 60mm on both sides */}
       <rect
         x={refBoardLeft}
         y={refBoardTop}
@@ -219,6 +230,26 @@ const TopView: React.FC<TopViewProps> = ({
         strokeWidth={1.5}
         strokeOpacity={0.4}
         rx={3}
+      />
+      
+      {/* Side lines at actual track width */}
+      <line
+        x1={sideLineLeftX}
+        y1={sideLineTopY}
+        x2={sideLineRightX}
+        y2={sideLineTopY}
+        stroke="#ffffff"
+        strokeWidth={1.5}
+        strokeDasharray="4 4"
+      />
+      <line
+        x1={sideLineLeftX}
+        y1={sideLineBottomY}
+        x2={sideLineRightX}
+        y2={sideLineBottomY}
+        stroke="#ffffff"
+        strokeWidth={1.5}
+        strokeDasharray="4 4"
       />
 
       {/* Render each setup — clipped to viewport */}

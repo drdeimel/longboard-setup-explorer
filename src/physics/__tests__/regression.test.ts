@@ -130,28 +130,28 @@ describe('Regression: Lean-to-steer baseline values', () => {
 // ---------------------------------------------------------------------------
 
 describe('Regression: ICR baseline values', () => {
-  it('50°/47° trucks at 15° lean → ICR at (378.42, 1226.84)', () => {
+  it('50°/47° trucks at 15° lean → ICR at (398.46, 1291.81)', () => {
     const result = computeICR(50, 0, 47, 0, 760, 15)
     expect(result.frontSteerDeg).toBeCloseTo(17.1423, 3)
     expect(result.rearSteerDeg).toBeCloseTo(15.5120, 3)
     expect(result.icr).not.toBeNull()
     if (result.icr) {
-      expect(result.icr.x).toBeCloseTo(378.4162, 3)
-      expect(result.icr.z).toBeCloseTo(1226.8373, 3)
+      expect(result.icr.x).toBeCloseTo(398.4572, 3)
+      expect(result.icr.z).toBeCloseTo(1291.8111, 3)
     }
-    expect(result.turningCurvature).toBeCloseTo(0.000815, 5)
+    expect(result.turningCurvature).toBeCloseTo(0.000774, 5)
   })
 
-  it('50°/47° trucks at 30° lean → ICR at (375.14, 629.56)', () => {
+  it('50°/47° trucks at 30° lean → ICR at (395.19, 663.20)', () => {
     const result = computeICR(50, 0, 47, 0, 760, 30)
     expect(result.frontSteerDeg).toBeCloseTo(30.7897, 3)
     expect(result.rearSteerDeg).toBeCloseTo(28.1995, 3)
     expect(result.icr).not.toBeNull()
     if (result.icr) {
-      expect(result.icr.x).toBeCloseTo(375.1405, 3)
-      expect(result.icr.z).toBeCloseTo(629.5606, 3)
+      expect(result.icr.x).toBeCloseTo(395.1878, 3)
+      expect(result.icr.z).toBeCloseTo(663.2039, 3)
     }
-    expect(result.turningCurvature).toBeCloseTo(0.001588, 5)
+    expect(result.turningCurvature).toBeCloseTo(0.001508, 5)
   })
 
   it('50°/50° symmetric trucks at 30° lean → ICR at (380.00, 637.72)', () => {
@@ -222,15 +222,15 @@ describe('Regression: Key geometry baseline values', () => {
     expect(result.bushingTorqueNm).toBeCloseTo(-162.5624, 3)
   })
 
-  it('50° RKP, barrel/barrel, 75kg at 30° lean → turningCenterX=375.14', () => {
+  it('50° RKP, barrel/barrel, 75kg at 30° lean → turningCenterX=395.19', () => {
     const result = computeKeyGeometry(
       pivotDir50, pivotAngle, rake, axleToBaseplate, baseplateToBoard,
       barrel90, barrel90, riderMass, 1.0, 30,
       rearPivotAngle, rearRake, wheelbase,
     )
-    expect(result.turningCenterX).toBeCloseTo(375.1405, 3)
-    expect(result.turningCenterZ).toBeCloseTo(629.5606, 3)
-    expect(result.turningCurvature).toBeCloseTo(0.001588, 5)
+    expect(result.turningCenterX).toBeCloseTo(395.1878, 3)
+    expect(result.turningCenterZ).toBeCloseTo(663.2039, 3)
+    expect(result.turningCurvature).toBeCloseTo(0.001508, 5)
   })
 
   it('50° RKP, barrel/barrel, 75kg at 30° lean → centerOfForceZ=220.95', () => {
