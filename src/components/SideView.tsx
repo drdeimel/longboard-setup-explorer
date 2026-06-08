@@ -277,17 +277,17 @@ const SideView: React.FC<SideViewProps> = ({
             y1={axleSvgY}
             x2={rakeEndX}
             y2={rakeEndY}
-            stroke="#22d3ee"
+            stroke={UI_TEXT_MUTED}
             strokeWidth={1.5}
             strokeDasharray="3 2"
           />
           {/* Tick at axle */}
-          <line x1={axleSvgX - 4} y1={axleSvgY - 4} x2={axleSvgX + 4} y2={axleSvgY + 4} stroke="#22d3ee" strokeWidth={1} />
-          <line x1={axleSvgX + 4} y1={axleSvgY - 4} x2={axleSvgX - 4} y2={axleSvgY + 4} stroke="#22d3ee" strokeWidth={1} />
+          <line x1={axleSvgX - 4} y1={axleSvgY - 4} x2={axleSvgX + 4} y2={axleSvgY + 4} stroke={UI_TEXT_MUTED} strokeWidth={1} />
+          <line x1={axleSvgX + 4} y1={axleSvgY - 4} x2={axleSvgX - 4} y2={axleSvgY + 4} stroke={UI_TEXT_MUTED} strokeWidth={1} />
           <text
             x={(axleSvgX + rakeEndX) / 2 + 4}
             y={(axleSvgY + rakeEndY) / 2}
-            fill="#22d3ee"
+            fill={UI_TEXT_MUTED}
             fontSize={9}
             fontFamily="monospace"
           >
@@ -304,17 +304,17 @@ const SideView: React.FC<SideViewProps> = ({
           y1={boardSurfaceY}
           x2={originX + 50}
           y2={effectiveRotCenterY}
-          stroke="#22d3ee"
+          stroke={UI_TEXT_MUTED}
           strokeWidth={1.5}
         />
         {/* Tick marks at endpoints */}
-        <line x1={originX + 46} y1={boardSurfaceY} x2={originX + 54} y2={boardSurfaceY} stroke="#22d3ee" strokeWidth={1} />
-        <line x1={originX + 46} y1={effectiveRotCenterY} x2={originX + 54} y2={effectiveRotCenterY} stroke="#22d3ee" strokeWidth={1} />
+        <line x1={originX + 46} y1={boardSurfaceY} x2={originX + 54} y2={boardSurfaceY} stroke={UI_TEXT_MUTED} strokeWidth={1} />
+        <line x1={originX + 46} y1={effectiveRotCenterY} x2={originX + 54} y2={effectiveRotCenterY} stroke={UI_TEXT_MUTED} strokeWidth={1} />
         {/* Value label */}
         <text
           x={originX + 58}
           y={(boardSurfaceY + effectiveRotCenterY) / 2 + 4}
-          fill="#22d3ee"
+          fill={UI_TEXT_MUTED}
           fontSize={9}
           fontFamily="monospace"
         >
@@ -386,47 +386,24 @@ const SideView: React.FC<SideViewProps> = ({
       {/* Axle-to-board dimension (board surface height) - moved to left side */}
       <line
         x1={originX - 100}
-        y1={axleSvgY}
+        y1={groundY}
         x2={originX - 100}
         y2={boardSurfaceY}
-        stroke="#22d3ee"
+        stroke={UI_TEXT_MUTED}
         strokeWidth={1.5}
       />
       {/* Tick marks */}
-      <line x1={originX - 104} y1={axleSvgY} x2={originX - 96} y2={axleSvgY} stroke="#22d3ee" strokeWidth={1} />
-      <line x1={originX - 104} y1={boardSurfaceY} x2={originX - 96} y2={boardSurfaceY} stroke="#22d3ee" strokeWidth={1} />
+      <line x1={originX - 104} y1={groundY} x2={originX - 96} y2={groundY} stroke={UI_TEXT_MUTED} strokeWidth={1} />
+      <line x1={originX - 104} y1={boardSurfaceY} x2={originX - 96} y2={boardSurfaceY} stroke={UI_TEXT_MUTED} strokeWidth={1} />
       <text
         x={originX - 108}
-        y={(axleSvgY + boardSurfaceY) / 2 + 4}
-        fill="#22d3ee"
+        y={(groundY + boardSurfaceY) / 2 + 4}
+        fill={UI_TEXT_MUTED}
         fontSize={9}
         fontFamily="monospace"
         textAnchor="end"
       >
         {dBoard}mm
-      </text>
-
-      {/* Wheel radius dimension */}
-      <line
-        x1={originX - 100}
-        y1={axleSvgY}
-        x2={originX - 100}
-        y2={groundY}
-        stroke="#22d3ee"
-        strokeWidth={1.5}
-      />
-      {/* Tick marks */}
-      <line x1={originX - 104} y1={axleSvgY} x2={originX - 96} y2={axleSvgY} stroke="#22d3ee" strokeWidth={1} />
-      <line x1={originX - 104} y1={groundY} x2={originX - 96} y2={groundY} stroke="#22d3ee" strokeWidth={1} />
-      <text
-        x={originX - 112}
-        y={(axleSvgY + groundY) / 2 + 4}
-        fill="#22d3ee"
-        fontSize={9}
-        fontFamily="monospace"
-        textAnchor="end"
-      >
-        r={truck.wheelDiameter / 2}
       </text>
 
       {/* Trailing dimension: horizontal distance from wheel contact patch to pivot axis ground intersection */}
@@ -436,16 +413,16 @@ const SideView: React.FC<SideViewProps> = ({
           y1={trailingIndicatorY}
           x2={trailingEndX}
           y2={trailingIndicatorY}
-          stroke="#22d3ee"
+          stroke={UI_TEXT_MUTED}
           strokeWidth={1.5}
         />
         {/* Tick marks */}
-        <line x1={trailingStartX} y1={trailingIndicatorY - 4} x2={trailingStartX} y2={trailingIndicatorY + 4} stroke="#22d3ee" strokeWidth={1} />
-        <line x1={trailingEndX} y1={trailingIndicatorY - 4} x2={trailingEndX} y2={trailingIndicatorY + 4} stroke="#22d3ee" strokeWidth={1} />
+        <line x1={trailingStartX} y1={trailingIndicatorY - 4} x2={trailingStartX} y2={trailingIndicatorY + 4} stroke={UI_TEXT_MUTED} strokeWidth={1} />
+        <line x1={trailingEndX} y1={trailingIndicatorY - 4} x2={trailingEndX} y2={trailingIndicatorY + 4} stroke={UI_TEXT_MUTED} strokeWidth={1} />
         <text
           x={(trailingStartX + trailingEndX) / 2}
           y={trailingIndicatorY + 14}
-          fill="#22d3ee"
+          fill={UI_TEXT_MUTED}
           fontSize={9}
           fontFamily="monospace"
           textAnchor="middle"
