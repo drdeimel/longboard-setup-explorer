@@ -22,7 +22,8 @@
 import React, { useState } from 'react'
 import type { TruckConfig } from '../models/TruckConfig'
 import { boardSurfaceHeight } from '../geometry/pivotAxis'
-import { computeInvPendulumHeight, DISPLAY_WHEEL_OFFSET_MM, DISPLAY_WHEEL_WIDTH_MM, DISPLAY_BOARD_HALF_WIDTH_MM } from '../physics/keyGeometryDataSet'
+import { computeTruckGeometry } from '../geometry/truckGeometry'
+import { DISPLAY_WHEEL_OFFSET_MM, DISPLAY_WHEEL_WIDTH_MM, DISPLAY_BOARD_HALF_WIDTH_MM } from '../physics/keyGeometryDataSet'
 import type { KeyGeometryResult } from '../physics/keyGeometryDataSet'
 import { UI_TEXT_MUTED, UI_TEXT_PRIMARY, UI_TEXT_SECONDARY } from '../theme/uiColors'
 
@@ -150,14 +151,15 @@ const FrontView: React.FC<FrontViewProps> = ({
     centerForceY = closestEntry.centerOfForceY + rotCenterY
     effectiveLeanAngleDeg = closestEntry.leanAngleDeg
   } else {
-    invPendulumHeight = computeInvPendulumHeight(
+    const truckGeom = computeTruckGeometry(
       truck.axleToBaseplateDistance,
       truck.baseplateToBoard,
       boardThicknessMm,
       truck.rake,
       truck.pivotAxisAngle,
     )
-    rotCenterY = dBoard - invPendulumHeight
+    invPendulumHeight = truckGeom.invPendulumHeight
+    rotCenterY = truckGeom.rotCenterY
   }
 
   // Calculate tilted board endpoints
@@ -263,23 +265,11 @@ const FrontView: React.FC<FrontViewProps> = ({
         y1={axleY}
         x2={rightAxleX}
         y2={axleY}
-        stroke={color}
+        stroke={"#475569"}
         strokeWidth={2.5}
         opacity={0.9}
       />
 
-      {/* Hanger body */}
-      <rect
-        x={originX - hangerHalfWidth}
-        y={hangerTop}
-        width={hangerHalfWidth * 2}
-        height={hangerHeight}
-        fill="none"
-        stroke={color}
-        strokeWidth={1}
-        opacity={0.4}
-        rx={3}
-      />
 
       {/* Board surface - drawn using centerOfBoard position and tilted */}
       <>
@@ -345,9 +335,6 @@ const FrontView: React.FC<FrontViewProps> = ({
         </g>
 
       </>
-
-      {/* Axle center crosshair */}
-      <circle cx={originX} cy={axleY} r={4} fill="#e2e8f0" />
 
       {/* Center of board curve */}
       {keyGeometryCurves && keyGeometryCurves[0]?.curve && (

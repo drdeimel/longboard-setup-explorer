@@ -21,7 +21,8 @@
 import React from 'react'
 import type { TruckConfig } from '../models/TruckConfig'
 import { computePivotAxis, boardSurfaceHeight } from '../geometry/pivotAxis'
-import { computeInvPendulumHeight, DISPLAY_GEOMETRY_WIDTH_MM } from '../physics/keyGeometryDataSet'
+import { computeTruckGeometry } from '../geometry/truckGeometry'
+import { DISPLAY_GEOMETRY_WIDTH_MM } from '../physics/keyGeometryDataSet'
 import { UI_TEXT_MUTED, UI_TEXT_PRIMARY, UI_TEXT_SECONDARY } from '../theme/uiColors'
 
 /** Props for the SideView component. */
@@ -184,14 +185,15 @@ const SideView: React.FC<SideViewProps> = ({
   // This is measured from the axle (Y=0), not from ground
   // At rake=0, this equals axleToBaseplateDistance (height of pivot point above axle)
   // Positive rake moves the effective rotation center UP from the axle
-  const invPendulumHeight = computeInvPendulumHeight(
+  const truckGeom = computeTruckGeometry(
     truck.axleToBaseplateDistance,
     truck.baseplateToBoard,
     boardThicknessMm,
     truck.rake,
     truck.pivotAxisAngle,
   )
-  const [, effectiveRotCenterY] = toSVG(0, dBoard - invPendulumHeight)
+  const invPendulumHeight = truckGeom.invPendulumHeight
+  const [, effectiveRotCenterY] = toSVG(0, truckGeom.rotCenterY)
 
   // Trailing: horizontal distance from wheel contact patch (x=0) to where
   // the pivot axis intersects the ground plane (y = -wheelRadius)

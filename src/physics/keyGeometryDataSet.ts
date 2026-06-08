@@ -1,6 +1,12 @@
 /**
  * Net return moment computation for the Longboard Simulator.
  *
+ * ARCHITECTURAL GUIDELINE:
+ * This file handles lean-dependent physics computations (torques, stiffness, ICR).
+ * For lean-independent, static truck geometry (e.g., dBoard, invPendulumHeight),
+ * use the centralized functions in `src/geometry/truckGeometry.ts`.
+ * This separation prevents divergence between views and physics calculations.
+ *
  * Combines the bushing restoring torque with the gravitational destabilizing
  * (inverted pendulum) torque to compute the net return moment as a function
  * of board lean angle.
@@ -33,6 +39,7 @@ import { combinedBushingStiffness } from './bushingModels'
 import { computeLeanToSteer, type LeanToSteerResult } from '../geometry/leanToSteer'
 import { computeICR } from '../geometry/turningCenter'
 import { computeRotationAxisDist } from '../geometry/rotationAxisDist'
+import { computeTruckGeometry } from '../geometry/truckGeometry'
 import type { Vec3 } from '../math/vec3'
 
 /** Default visualization constants for the truck views. */
@@ -183,8 +190,17 @@ export function computeKeyGeometry(
 ): KeyGeometryResult {
   // Use precomputed values if provided, otherwise compute
   const pivotAxisAngleRad = precomputed?.pivotAxisAngleRad ?? (pivotAxisAngleDeg * Math.PI / 180)
-  const invPendulumHeight = precomputed?.invPendulumHeight ?? 
-    (axleToBaseplateDistance + baseplateToBoard - rake / Math.cos(pivotAxisAngleRad))
+  
+  // Use centralized geometry computation to ensure consistency
+  const truckGeom = computeTruckGeometry(
+    axleToBaseplateDistance,
+    baseplateToBoard,
+    0, // boardThicknessMm is already included in baseplateToBoard by the caller (App.tsx)
+    rake,
+    pivotAxisAngleDeg,
+  )
+  const invPendulumHeight = precomputed?.invPendulumHeight ?? truckGeom.invPendulumHeight
+  
   const riderForce = precomputed?.riderForce ?? (riderMassKg * G)
 
   // Get hanger rotation from lean angle
@@ -298,13 +314,19 @@ export function returnKeyGeometryCurves(
   const results: KeyGeometryResult[] = []
   const step = (maxLeanDeg - minLeanDeg) / (numSamples - 1)
 
-  // Pre-compute lean-invariant values once
+  // Pre-compute lean-invariant values once using centralized geometry computation
   const pivotAxisAngleRad = pivotAxisAngleDeg * Math.PI / 180
-  const invPendulumHeight = axleToBaseplateDistance + baseplateToBoard - rake / Math.cos(pivotAxisAngleRad)
+  const truckGeom = computeTruckGeometry(
+    axleToBaseplateDistance,
+    baseplateToBoard,
+    0, // boardThicknessMm is already included in baseplateToBoard by the caller (App.tsx)
+    rake,
+    pivotAxisAngleDeg,
+  )
   const riderForce = riderMassKg * G
   const precomputed = {
     pivotAxisAngleRad,
-    invPendulumHeight,
+    invPendulumHeight: truckGeom.invPendulumHeight,
     riderForce,
   }
 
