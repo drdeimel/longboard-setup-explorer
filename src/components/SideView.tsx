@@ -240,7 +240,7 @@ const SideView: React.FC<SideViewProps> = ({
         r={wheelR}
         fill="none"
         stroke="#475569"
-        strokeWidth={0.25}
+        strokeWidth={1.5}
       />
       {/* Wheel contact point */}
       <circle cx={wheelCx} cy={groundY} r={3} fill={UI_TEXT_MUTED} />
@@ -442,12 +442,6 @@ const SideView: React.FC<SideViewProps> = ({
       </defs>
 
       {/* Axis labels */}
-      <text x={width - 20} y={originY + 4} fill={UI_TEXT_SECONDARY} fontSize={10} fontFamily="monospace">
-        +X
-      </text>
-      <text x={originX + 4} y={20} fill={UI_TEXT_SECONDARY} fontSize={10} fontFamily="monospace">
-        +Y
-      </text>
       <line
         x1={10}
         y1={originY}

@@ -46,6 +46,8 @@ interface TopViewProps {
   keyGeometryCurves?: { setupId: string; maxLeanDeg: number; curve: KeyGeometryResult[] }[]
   /** Global board thickness in mm, added to baseplate-to-board distance in physics computations. */
   boardThicknessMm?: number
+  /** Current steering lean angle in degrees, used to display the turning circle segment. */
+  steeringLeanAngleDeg?: number
 }
 
 const DEFAULT_WIDTH = 360
@@ -113,6 +115,7 @@ const TopView: React.FC<TopViewProps> = ({
   height = DEFAULT_HEIGHT,
   keyGeometryCurves,
   boardThicknessMm = 11,
+  steeringLeanAngleDeg = 0,
 }) => {
   if (setups.length === 0) {
     return (
@@ -194,6 +197,59 @@ const TopView: React.FC<TopViewProps> = ({
     })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [setups, keyGeometryCurves, boardThicknessMm])
+
+  // ── Compute turning arc for the active setup ──────────────────────────────
+  const turningArc = useMemo(() => {
+    const activeCurveData = icrData.find(d => d.setup.id === activeSetupId)
+    if (!activeCurveData) return null
+    
+    // Find the point in the curve closest to steeringLeanAngleDeg
+    const point = activeCurveData.curve.reduce((prev, curr) => 
+      Math.abs(curr.leanAngleDeg - steeringLeanAngleDeg) < Math.abs(prev.leanAngleDeg - steeringLeanAngleDeg) ? curr : prev
+    )
+    
+    // If ICR is null or radius is too large, it's basically straight
+    const isStraight = point.turningCenterX === null || point.turningCenterZ === null || Math.abs(point.turningCenterZ) > 15000
+    
+    let icrX = 0
+    let icrZ = 0
+    let R = 0
+    
+    if (!isStraight) {
+      icrX = point.turningCenterX!
+      icrZ = point.turningCenterZ!
+      R = Math.abs(icrZ)
+    }
+    
+    // Valid X range for the circle: [icrX - R, icrX + R]
+    // Extend to cover the whole figure area vertically (clipping will handle the rest)
+    const minX = isStraight ? -0.2 * maxWheelbase : Math.max(-0.2 * maxWheelbase, icrX - R)
+    const maxX = isStraight ? 1.2 * maxWheelbase : Math.min(1.2 * maxWheelbase, icrX + R)
+    
+    if (minX >= maxX) return null
+    
+    const steps = 32
+    const pts: [number, number][] = []
+    for (let i = 0; i <= steps; i++) {
+      const X = minX + (maxX - minX) * (i / steps)
+      let dz = 0
+      if (!isStraight) {
+        const dx = X - icrX
+        // The circle equation: (X - icrX)^2 + (Z - icrZ)^2 = R^2
+        // We want the Z that is closer to 0 (the board mid-line)
+        dz = icrZ > 0 
+          ? icrZ - Math.sqrt(Math.max(0, R * R - dx * dx))
+          : icrZ + Math.sqrt(Math.max(0, R * R - dx * dx))
+      }
+      
+      pts.push(toSVG(X, dz))
+    }
+    
+    return {
+      points: toPolylinePoints(pts),
+      color: activeCurveData.setup.color,
+    }
+  }, [icrData, activeSetupId, steeringLeanAngleDeg, maxWheelbase])
 
   return (
     <svg
@@ -315,6 +371,18 @@ const TopView: React.FC<TopViewProps> = ({
           </g>
         )
       })}
+      
+      {/* Turning arc for the active setup */}
+      {turningArc && (
+        <polyline
+          points={turningArc.points}
+          fill="none"
+          stroke={turningArc.color}
+          strokeWidth={4}
+          opacity={0.6}
+          strokeLinejoin="round"
+        />
+      )}
       </g>
 
       {/* Wheelbase dimension for reference setup — now rendered as a vertical annotation */}
@@ -347,7 +415,6 @@ const TopView: React.FC<TopViewProps> = ({
       })()}
 
       {/* Axis labels */}
-      {/* +X is downward (rear), front is at top */}
       <text
         x={originX + 4}
         y={originY - 4}
@@ -366,17 +433,7 @@ const TopView: React.FC<TopViewProps> = ({
         fontFamily="monospace"
         textAnchor="middle"
       >
-        rear (−X)
-      </text>
-      <text
-        x={width - 6}
-        y={originY + maxWheelbase * icrScale / 2 + 4}
-        fill={UI_TEXT_SECONDARY}
-        fontSize={10}
-        fontFamily="monospace"
-        textAnchor="end"
-      >
-        +Z
+        rear
       </text>
 
       {/* Legend */}

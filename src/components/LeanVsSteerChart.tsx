@@ -103,7 +103,7 @@ const LeanVsSteerChart: React.FC<LeanVsSteerChartProps> = ({
       data={traces}
       layout={{
         title: {
-          text: 'Turn per Lean °/°',
+          text: 'Steer per Lean [°/°]',
           font: { color: UI_TEXT_PRIMARY, size: 13 },
         },
         paper_bgcolor: '#0f172a',
@@ -117,7 +117,7 @@ const LeanVsSteerChart: React.FC<LeanVsSteerChartProps> = ({
           range: [-axisMaxLean, axisMaxLean],
         },
         yaxis: {
-          title: { text: 'Turn [°]', font: { size: 11 } },
+          title: { text: 'Steer [°]', font: { size: 11 } },
           gridcolor: '#1e293b',
           zerolinecolor: '#334155',
           color: UI_TEXT_MUTED,

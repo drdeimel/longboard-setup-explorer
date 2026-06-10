@@ -109,7 +109,7 @@ const LeanVsRotationalStiffnessChart: React.FC<LeanVsRotationalStiffnessChartPro
       data={traces}
       layout={{
         title: {
-          text: 'Bushing Stiffness',
+          text: 'Rotational Stiffness',
           font: { color: UI_TEXT_PRIMARY, size: 13 },
         },
         paper_bgcolor: '#0f172a',

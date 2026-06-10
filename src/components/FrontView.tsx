@@ -401,12 +401,6 @@ const FrontView: React.FC<FrontViewProps> = ({
 
 
       {/* Axis labels */}
-      <text x={width - 20} y={axleY + 4} fill={UI_TEXT_SECONDARY} fontSize={10} fontFamily="monospace">
-        +Z
-      </text>
-      <text x={originX + 4} y={20} fill={UI_TEXT_SECONDARY} fontSize={10} fontFamily="monospace">
-        +Y
-      </text>
     </svg>
   )
 }

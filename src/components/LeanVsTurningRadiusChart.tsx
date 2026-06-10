@@ -122,7 +122,7 @@ const LeanVsTurningRadiusChart: React.FC<LeanVsTurningRadiusChartProps> = ({
       data={traces}
       layout={{
         title: {
-          text: 'Turning linearity [1/m/°]',
+          text: 'Turning Curvature',
           font: { color: UI_TEXT_PRIMARY, size: 13 },
         },
         paper_bgcolor: '#0f172a',
@@ -136,7 +136,7 @@ const LeanVsTurningRadiusChart: React.FC<LeanVsTurningRadiusChartProps> = ({
           range: [-axisMaxLean, axisMaxLean],
         },
         yaxis: {
-          title: { text: 'Inverse Turn Radius [1/m]', font: { size: 11 } },
+          title: { text: 'Curvature [1/m]', font: { size: 11 } },
           gridcolor: '#1e293b',
           zerolinecolor: '#334155',
           color: UI_TEXT_MUTED,

@@ -34,6 +34,7 @@ export function useKeyGeometryCurves(
   riderParams: RiderParams,
 ): KeyGeometryCurveData[] {
   return useMemo(() => {
+    const maxLean = riderParams.maxLeanAngle ?? DEFAULT_MAX_LEAN
     return setups.map(setup => {
       const truck = setup.frontTruck
       const rearTruck = setup.rearTruck
@@ -49,8 +50,8 @@ export function useKeyGeometryCurves(
         truck.boardsideBushing,
         riderParams.massKg,
         riderParams.comHeightM,
-        -DEFAULT_MAX_LEAN,
-        DEFAULT_MAX_LEAN,
+        -maxLean,
+        maxLean,
         DEFAULT_SAMPLES,
         rearTruck.pivotAxisAngle,
         rearTruck.rake,
@@ -59,7 +60,7 @@ export function useKeyGeometryCurves(
       
       return {
         setupId: setup.id,
-        maxLeanDeg: DEFAULT_MAX_LEAN,
+        maxLeanDeg: maxLean,
         curve,
       }
     })
@@ -68,6 +69,7 @@ export function useKeyGeometryCurves(
     riderParams.massKg,
     riderParams.comHeightM,
     riderParams.boardThicknessMm,
+    riderParams.maxLeanAngle,
     // Note: We rely on object reference equality for `setups` and `riderParams`.
     // If individual truck properties change, the parent component must ensure
     // the `setups` array reference is updated to trigger recomputation.

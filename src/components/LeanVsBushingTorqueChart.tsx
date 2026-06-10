@@ -102,7 +102,7 @@ const LeanVsBushingTorqueChart: React.FC<LeanVsBushingTorqueChartProps> = ({
   }, [setups, riderMassKg, comHeightM, boardThicknessMm, numSamples, activeSetupId, keyGeometryCurves])
 
   // Derive x-axis range from the keyGeometryCurves payload, falling back to DEFAULT_MAX_LEAN.
-  const axisMaxLean = DEFAULT_MAX_LEAN
+  const axisMaxLean = keyGeometryCurves?.[0]?.maxLeanDeg ?? DEFAULT_MAX_LEAN
   // Y-axis range: ±(riderWeight * boardWidth / 2) in Nm
   const riderWeightN = riderMassKg * 9.81
   const yAxisMax = (riderWeightN * 235 / 2) / 1000 // convert N·mm to Nm

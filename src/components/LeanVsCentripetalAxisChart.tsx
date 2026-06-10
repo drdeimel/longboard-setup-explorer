@@ -122,21 +122,21 @@ const LeanVsCentripetalAxisChart: React.FC<LeanVsCentripetalAxisChartProps> = ({
       data={traces}
       layout={{
         title: {
-          text: 'Center of Stiffness',
+          text: 'Centripetal Axis',
           font: { color: UI_TEXT_PRIMARY, size: 13 },
         },
         paper_bgcolor: '#0f172a',
         plot_bgcolor: '#0f172a',
         font: { color: UI_TEXT_PRIMARY, size: 11 },
         xaxis: {
-          title: { text: 'Lean Angle [°]', font: { size: 11 } },
+          title: { text: 'Lean [°]', font: { size: 11 } },
           gridcolor: '#1e293b',
           zerolinecolor: '#334155',
           color: UI_TEXT_MUTED,
           range: [-axisMaxLean, axisMaxLean],
         },
         yaxis: {
-          title: { text: 'Behind Front truck [mm]', font: { size: 11 } },
+          title: { text: 'Centripetal Axis [mm]', font: { size: 11 } },
           gridcolor: '#1e293b',
           zerolinecolor: '#334155',
           color: UI_TEXT_MUTED,

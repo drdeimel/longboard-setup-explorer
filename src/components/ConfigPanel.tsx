@@ -243,6 +243,8 @@ export interface RiderParams {
   boardThicknessMm: number
   /** Rider center-of-mass height above ground in m. */
   comHeightM: number
+  /** Maximum lean angle in degrees for chart ranges. */
+  maxLeanAngle: number
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -577,7 +579,15 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
             unit="mm"
             onChange={v => onRiderParamsChange({ ...riderParams, boardThicknessMm: v })}
           />
-
+          <SliderRow
+            label="Max lean angle"
+            value={riderParams.maxLeanAngle}
+            min={10}
+            max={30}
+            step={1}
+            unit="°"
+            onChange={v => onRiderParamsChange({ ...riderParams, maxLeanAngle: v })}
+          />
         </div>
 
         {/* ── Chart Controls ── */}

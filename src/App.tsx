@@ -52,6 +52,7 @@ const DEFAULT_RIDER_PARAMS: RiderParams = {
   massKg: 75,
   boardThicknessMm: 11,
   comHeightM: 1.0,
+  maxLeanAngle: DEFAULT_MAX_LEAN,
 }
 
 /** Build the default initial setup from the Standard RKP 50° preset. */
@@ -379,6 +380,7 @@ const App: React.FC = () => {
                 height={256}
                 boardThicknessMm={riderParams.boardThicknessMm}
                 keyGeometryCurves={keyGeometryCurves}
+                steeringLeanAngleDeg={steeringLeanAngleDeg}
               />
             </div>
             <div className="h-64" data-tour="lean-vs-steer">
