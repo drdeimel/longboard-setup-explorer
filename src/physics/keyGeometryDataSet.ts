@@ -234,7 +234,7 @@ export function computeKeyGeometry(
   const centerOfForceY =  centerOfBoardY  - (centerOfForceZ - centerOfBoardZ) * Math.tan(leanRad) 
   const centerOfForceAngle = Math.atan2(centerOfForceZ, centerOfForceY)
   const centerOfForceRadius = Math.sqrt(centerOfForceY*centerOfForceY + centerOfForceZ+centerOfForceZ)
-  const weightGeometricStiffness = -Math.cos(centerOfForceAngle) * Math.abs(centerOfForceZ) * riderForce/1000 
+  const weightGeometricStiffness = Math.cos(centerOfForceAngle) * Math.abs(centerOfForceZ) * riderForce/1000 
   const bushingStiffness = combinedBushingStiffness(
     roadsideBushing,
     boardsideBushing,
