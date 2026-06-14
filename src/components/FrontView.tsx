@@ -23,6 +23,7 @@ import React, { useState } from 'react'
 import type { TruckConfig } from '../models/TruckConfig'
 import { boardSurfaceHeight } from '../geometry/pivotAxis'
 import { computeTruckGeometry } from '../geometry/truckGeometry'
+import { computeLeanToSteer } from '../geometry/leanToSteer'
 import { DISPLAY_WHEEL_OFFSET_MM, DISPLAY_WHEEL_WIDTH_MM, DISPLAY_BOARD_HALF_WIDTH_MM } from '../physics/keyGeometryDataSet'
 import type { KeyGeometryResult } from '../physics/keyGeometryDataSet'
 import { UI_TEXT_MUTED, UI_TEXT_PRIMARY, UI_TEXT_SECONDARY } from '../theme/uiColors'
@@ -88,10 +89,24 @@ const FrontView: React.FC<FrontViewProps> = ({
     truck.baseplateToBoard + boardThicknessMm,
   )
 
+  // Compute steering angle for front view projection
+  const pivotAxisAngleRad = (truck.pivotAxisAngle * Math.PI) / 180
+  const pivotAxisDirection: [number, number, number] = [
+    Math.cos(pivotAxisAngleRad),
+    Math.sin(pivotAxisAngleRad),
+    0,
+  ]
+  const steerResult = computeLeanToSteer(pivotAxisDirection, leanAngleDeg)
+  const steerAngleRad = (steerResult.steerAngleDeg * Math.PI) / 180
+  
+  // Projection factor for front view (Z-axis component).
+  // Note: Using cos(steerAngle) because at 0 steering, the axle is fully along the Z axis (width factor = 1).
+  // Using sin would collapse the width to 0 at 0 steering, which is physically incorrect for a front view projection.
+  const steerProjection = Math.cos(steerAngleRad)
+
   // Geometry extents (in mm)
-  const halfTrack = truck.trackWidth / 2
-  // Width: fit trackWidth + extra for board line (160mm) + padding
-  const geometryWidthMm = truck.trackWidth + 180 // padding for board line and margins
+  const halfTrack = (truck.trackWidth / 2) * steerProjection
+  const geometryWidthMm = truck.trackWidth * steerProjection + 180 // padding for board line and margins
   const geometryHeightMm = dBoard + truck.wheelDiameter / 2 + 20
 
   const ppm = pixelsPerMm ?? Math.min(
@@ -111,14 +126,19 @@ const FrontView: React.FC<FrontViewProps> = ({
   ]
 
   const groundY = originY + truck.wheelDiameter / 2 * ppm
-  const wheelWidth = DISPLAY_WHEEL_WIDTH_MM * ppm
+  const wheelWidth = DISPLAY_WHEEL_WIDTH_MM * steerProjection * ppm
   // Match wheel indicator height to actual wheel diameter in this view.
   const wheelHeight = truck.wheelDiameter * ppm
 
+  // Ellipse dimensions for wheel sides to visualize steering
+  // At 0 steering, rx=0 (vertical line). As steering increases, ellipse widens.
+  const wheelEllipseRx = (wheelHeight * Math.abs(Math.sin(steerAngleRad))) / 2
+  const wheelEllipseRy = wheelHeight / 2
+
   const wheelOffset = DISPLAY_WHEEL_OFFSET_MM
 
-  const [leftWheelX] = toSVG(-halfTrack - wheelOffset, 0)
-  const [rightWheelX] = toSVG(halfTrack + wheelOffset, 0)
+  const [leftWheelX] = toSVG(-halfTrack - wheelOffset * steerProjection, 0)
+  const [rightWheelX] = toSVG(halfTrack + wheelOffset * steerProjection, 0)
 
   // Axle line endpoints
   const [leftAxleX, axleY] = toSVG(-halfTrack, 0)
@@ -127,7 +147,7 @@ const FrontView: React.FC<FrontViewProps> = ({
   // Hanger body (simplified rectangle between the wheel contact points)
   const hangerTop = originY - (truck.axleToBaseplateDistance * ppm * 0.6)
   const hangerHeight = truck.axleToBaseplateDistance * ppm * 0.6
-  const hangerHalfWidth = (halfTrack - 10) * ppm
+  const hangerHalfWidth = (halfTrack - 10) * steerProjection * ppm
 
   // Board surface computations (moved out of JSX)
   // Get the center of board position from keyGeometryCurves at the current lean angle
@@ -167,6 +187,7 @@ const FrontView: React.FC<FrontViewProps> = ({
     rotCenterY = truckGeom.rotCenterY
   }
 
+  // Compute steering angle for front view projection
   // Calculate tilted board endpoints
   const leanRad = (effectiveLeanAngleDeg * Math.PI) / 180
   const boardHalfWidth = DISPLAY_BOARD_HALF_WIDTH_MM
@@ -241,28 +262,68 @@ const FrontView: React.FC<FrontViewProps> = ({
       />
 
       {/* Left wheel */}
-      <rect
-        x={leftWheelX - wheelWidth / 2}
-        y={groundY - wheelHeight}
-        width={wheelWidth}
-        height={wheelHeight}
-        rx={0}
-        fill="none"
-        stroke="#475569"
-        strokeWidth={1.5}
-      />
+      <g stroke="#475569" strokeWidth={1.5} fill="none">
+        {/* Top horizontal line */}
+        <line
+          x1={leftWheelX - wheelWidth / 2}
+          y1={groundY - wheelHeight}
+          x2={leftWheelX + wheelWidth / 2}
+          y2={groundY - wheelHeight}
+        />
+        {/* Bottom horizontal line */}
+        <line
+          x1={leftWheelX - wheelWidth / 2}
+          y1={groundY}
+          x2={leftWheelX + wheelWidth / 2}
+          y2={groundY}
+        />
+        {/* Left ellipse */}
+        <ellipse
+          cx={leftWheelX - wheelWidth / 2}
+          cy={groundY - wheelHeight / 2}
+          rx={wheelEllipseRx}
+          ry={wheelEllipseRy}
+        />
+        {/* Right ellipse */}
+        <ellipse
+          cx={leftWheelX + wheelWidth / 2}
+          cy={groundY - wheelHeight / 2}
+          rx={wheelEllipseRx}
+          ry={wheelEllipseRy}
+        />
+      </g>
 
       {/* Right wheel */}
-      <rect
-        x={rightWheelX - wheelWidth / 2}
-        y={groundY - wheelHeight}
-        width={wheelWidth}
-        height={wheelHeight}
-        rx={0}
-        fill="none"
-        stroke="#475569"
-        strokeWidth={1.5}
-      />
+      <g stroke="#475569" strokeWidth={1.5} fill="none">
+        {/* Top horizontal line */}
+        <line
+          x1={rightWheelX - wheelWidth / 2}
+          y1={groundY - wheelHeight}
+          x2={rightWheelX + wheelWidth / 2}
+          y2={groundY - wheelHeight}
+        />
+        {/* Bottom horizontal line */}
+        <line
+          x1={rightWheelX - wheelWidth / 2}
+          y1={groundY}
+          x2={rightWheelX + wheelWidth / 2}
+          y2={groundY}
+        />
+        {/* Left ellipse */}
+        <ellipse
+          cx={rightWheelX - wheelWidth / 2}
+          cy={groundY - wheelHeight / 2}
+          rx={wheelEllipseRx}
+          ry={wheelEllipseRy}
+        />
+        {/* Right ellipse */}
+        <ellipse
+          cx={rightWheelX + wheelWidth / 2}
+          cy={groundY - wheelHeight / 2}
+          rx={wheelEllipseRx}
+          ry={wheelEllipseRy}
+        />
+      </g>
 
       {/* Axle line */}
       <line
