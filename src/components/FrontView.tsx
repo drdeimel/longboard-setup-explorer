@@ -104,6 +104,9 @@ const FrontView: React.FC<FrontViewProps> = ({
   // Using sin would collapse the width to 0 at 0 steering, which is physically incorrect for a front view projection.
   const steerProjection = Math.cos(steerAngleRad)
 
+  // Determine lean direction for wheel face occlusion
+  const isPositiveLean = steerResult.steerAngleDeg > 0
+
   // Geometry extents (in mm)
   const halfTrack = (truck.trackWidth / 2) * steerProjection
   const geometryWidthMm = truck.trackWidth * steerProjection + 180 // padding for board line and margins
@@ -242,6 +245,25 @@ const FrontView: React.FC<FrontViewProps> = ({
       onMouseUp={() => setIsDragging(false)}
       onMouseLeave={() => setIsDragging(false)}
     >
+      <defs>
+        {/* Left wheel outer ellipse (clipped on negative lean): hide right half (keep x <= cx) */}
+        <clipPath id="clip-lo-neg">
+          <rect x={0} y={0} width={leftWheelX - wheelWidth / 2} height={height} />
+        </clipPath>
+        {/* Left wheel inner ellipse (clipped on positive lean): hide left half (keep x >= cx) */}
+        <clipPath id="clip-li-pos">
+          <rect x={leftWheelX + wheelWidth / 2} y={0} width={width} height={height} />
+        </clipPath>
+        {/* Right wheel inner ellipse (clipped on negative lean): hide right half (keep x <= cx) */}
+        <clipPath id="clip-ri-neg">
+          <rect x={0} y={0} width={rightWheelX - wheelWidth / 2} height={height} />
+        </clipPath>
+        {/* Right wheel outer ellipse (clipped on positive lean): hide left half (keep x >= cx) */}
+        <clipPath id="clip-ro-pos">
+          <rect x={rightWheelX + wheelWidth / 2} y={0} width={width} height={height} />
+        </clipPath>
+      </defs>
+
       {/* Background */}
       <rect width={width} height={height} fill="#0f172a" rx={4} />
 
@@ -277,19 +299,21 @@ const FrontView: React.FC<FrontViewProps> = ({
           x2={leftWheelX + wheelWidth / 2}
           y2={groundY}
         />
-        {/* Left ellipse */}
+        {/* Outer ellipse - full on positive lean, clipped on negative lean (hide right half) */}
         <ellipse
           cx={leftWheelX - wheelWidth / 2}
           cy={groundY - wheelHeight / 2}
           rx={wheelEllipseRx}
           ry={wheelEllipseRy}
+          clipPath={!isPositiveLean ? "url(#clip-lo-neg)" : undefined}
         />
-        {/* Right ellipse */}
+        {/* Inner ellipse - clipped on positive lean (hide left half), full on negative lean */}
         <ellipse
           cx={leftWheelX + wheelWidth / 2}
           cy={groundY - wheelHeight / 2}
           rx={wheelEllipseRx}
           ry={wheelEllipseRy}
+          clipPath={isPositiveLean ? "url(#clip-li-pos)" : undefined}
         />
       </g>
 
@@ -309,19 +333,21 @@ const FrontView: React.FC<FrontViewProps> = ({
           x2={rightWheelX + wheelWidth / 2}
           y2={groundY}
         />
-        {/* Left ellipse */}
+        {/* Inner ellipse - full on positive lean, clipped on negative lean (hide right half) */}
         <ellipse
           cx={rightWheelX - wheelWidth / 2}
           cy={groundY - wheelHeight / 2}
           rx={wheelEllipseRx}
           ry={wheelEllipseRy}
+          clipPath={!isPositiveLean ? "url(#clip-ri-neg)" : undefined}
         />
-        {/* Right ellipse */}
+        {/* Outer ellipse - clipped on positive lean (hide left half), full on negative lean */}
         <ellipse
           cx={rightWheelX + wheelWidth / 2}
           cy={groundY - wheelHeight / 2}
           rx={wheelEllipseRx}
           ry={wheelEllipseRy}
+          clipPath={isPositiveLean ? "url(#clip-ro-pos)" : undefined}
         />
       </g>
 
