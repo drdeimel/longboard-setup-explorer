@@ -88,6 +88,7 @@ const DUROMETER_EXPONENT = 2.0
  * @returns Base stiffness k in N·mm per degree.
  */
 export function bushingBaseStiffness(config: BushingConfig): number {
+  if (config.shape === 'none') return 0
   const durometerRatio = config.durometer / REFERENCE_DUROMETER
   const kRef =
     config.shape === 'barrel' ? K_BARREL_REFERENCE : K_CONE_REFERENCE
@@ -131,6 +132,7 @@ export function bushingMaxAngle(config: BushingConfig): number {
  * @units N·mm
  */
 export function bushingTorque(config: BushingConfig, angleDeg: number): number {
+  if (config.shape === 'none') return 0
   const k = bushingBaseStiffness(config)
   const maxAngle = bushingMaxAngle(config)
   const θ = angleDeg
@@ -159,6 +161,7 @@ export function bushingTorque(config: BushingConfig, angleDeg: number): number {
  * @returns 
  */
 export function bushingStiffness(config: BushingConfig, angleDeg: number): number {
+  if (config.shape === 'none') return 0
 
   const delta_angle = 0.1
   const torque_a = bushingTorque(config, angleDeg-0.5*delta_angle)

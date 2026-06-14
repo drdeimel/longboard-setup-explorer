@@ -207,6 +207,7 @@ const BushingEditor: React.FC<BushingEditorProps> = ({ label, bushing, onChange 
       options={[
         { value: 'barrel', label: 'Barrel' },
         { value: 'cone', label: 'Cone' },
+        { value: 'none', label: 'None' },
       ]}
       onChange={v => onChange({ ...bushing, shape: v as BushingConfig['shape'] })}
     />

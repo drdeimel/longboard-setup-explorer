@@ -11,8 +11,9 @@
  * - `'barrel'`  — cylindrical bushing with near-linear stiffness (mild progressive).
  * - `'cone'`    — conical bushing with progressive stiffness that increases
  *                 nonlinearly with rotation angle.
+ * - `'none'`    — no bushing; constant zero stiffness and zero force/moment.
  */
-export type BushingShape = 'barrel' | 'cone'
+export type BushingShape = 'barrel' | 'cone' | 'none'
 
 /**
  * Nominal height tier of a bushing.
