@@ -14,7 +14,6 @@
 
 import React, { useState } from 'react'
 import type { BoardSetupConfig } from '../models/BoardSetupConfig'
-import { DEFAULT_MAX_LEAN } from '../models/BoardSetupConfig'
 import type { TruckConfig } from '../models/TruckConfig'
 import type { RearTruckConfig } from '../models/RearTruckConfig'
 import type { BushingConfig } from '../models/BushingConfig'
@@ -242,6 +241,8 @@ export interface RiderParams {
   massKg: number
   /** Global board thickness in mm (used by SideView + FrontView). */
   boardThicknessMm: number
+  /** Global board width in mm (used by FrontView + TopView). */
+  boardWidthMm: number
   /** Rider center-of-mass height above ground in m. */
   comHeightM: number
   /** Maximum lean angle in degrees for chart ranges. */
@@ -581,6 +582,15 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
             onChange={v => onRiderParamsChange({ ...riderParams, boardThicknessMm: v })}
           />
           <SliderRow
+            label="Board width"
+            value={riderParams.boardWidthMm}
+            min={180}
+            max={270}
+            step={1}
+            unit="mm"
+            onChange={v => onRiderParamsChange({ ...riderParams, boardWidthMm: v })}
+          />
+          <SliderRow
             label="Max lean angle"
             value={riderParams.maxLeanAngle}
             min={10}
@@ -597,8 +607,8 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
           <SliderRow
             label="Steering chart lean"
             value={steeringLeanAngleDeg}
-            min={-DEFAULT_MAX_LEAN}
-            max={DEFAULT_MAX_LEAN}
+            min={-riderParams.maxLeanAngle}
+            max={riderParams.maxLeanAngle}
             step={1}
             unit="°"
             onChange={onSteeringLeanAngleChange}

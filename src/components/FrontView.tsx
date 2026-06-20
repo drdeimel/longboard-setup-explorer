@@ -24,9 +24,9 @@ import type { TruckConfig } from '../models/TruckConfig'
 import { boardSurfaceHeight } from '../geometry/pivotAxis'
 import { computeTruckGeometry } from '../geometry/truckGeometry'
 import { computeLeanToSteer } from '../geometry/leanToSteer'
-import { DISPLAY_WHEEL_OFFSET_MM, DISPLAY_WHEEL_WIDTH_MM, DISPLAY_BOARD_HALF_WIDTH_MM } from '../physics/keyGeometryDataSet'
+import { DISPLAY_WHEEL_OFFSET_MM, DISPLAY_WHEEL_WIDTH_MM } from '../physics/keyGeometryDataSet'
 import type { KeyGeometryResult } from '../physics/keyGeometryDataSet'
-import { UI_TEXT_MUTED, UI_TEXT_PRIMARY, UI_TEXT_SECONDARY } from '../theme/uiColors'
+import { UI_TEXT_MUTED, UI_TEXT_PRIMARY } from '../theme/uiColors'
 
 /** Props for the FrontView component. */
 interface FrontViewProps {
@@ -58,6 +58,10 @@ interface FrontViewProps {
   onLeanAngleChange?: (leanAngleDeg: number) => void
   /** Global board thickness in mm (shared with SideView). */
   boardThicknessMm?: number
+  /** Global board width in mm (used for board visualization). */
+  boardWidthMm?: number
+  /** Maximum lean angle in degrees for drag clamping (from riderParams). */
+  maxLeanAngle?: number
 }
 
 const DEFAULT_WIDTH = 500
@@ -75,12 +79,14 @@ const FrontView: React.FC<FrontViewProps> = ({
   width = DEFAULT_WIDTH,
   height = DEFAULT_HEIGHT,
   pixelsPerMm,
-  groundOffsetPx = 20,
+  groundOffsetPx = 30,
   keyGeometryCurves,
   activeSetupId,
   leanAngleDeg = 0,
   onLeanAngleChange,
   boardThicknessMm = 11,
+  boardWidthMm = 245,
+  maxLeanAngle = 30,
 }) => {
   const [isDragging, setIsDragging] = useState(false)
 
@@ -89,68 +95,6 @@ const FrontView: React.FC<FrontViewProps> = ({
     truck.baseplateToBoard + boardThicknessMm,
   )
 
-  // Compute steering angle for front view projection
-  const pivotAxisAngleRad = (truck.pivotAxisAngle * Math.PI) / 180
-  const pivotAxisDirection: [number, number, number] = [
-    Math.cos(pivotAxisAngleRad),
-    Math.sin(pivotAxisAngleRad),
-    0,
-  ]
-  const steerResult = computeLeanToSteer(pivotAxisDirection, leanAngleDeg)
-  const steerAngleRad = (steerResult.steerAngleDeg * Math.PI) / 180
-  
-  // Projection factor for front view (Z-axis component).
-  // Note: Using cos(steerAngle) because at 0 steering, the axle is fully along the Z axis (width factor = 1).
-  // Using sin would collapse the width to 0 at 0 steering, which is physically incorrect for a front view projection.
-  const steerProjection = Math.cos(steerAngleRad)
-
-  // Determine lean direction for wheel face occlusion
-  const isPositiveLean = steerResult.steerAngleDeg > 0
-
-  // Geometry extents (in mm)
-  const halfTrack = (truck.trackWidth / 2) * steerProjection
-  const geometryWidthMm = truck.trackWidth * steerProjection + 180 // padding for board line and margins
-  const geometryHeightMm = dBoard + truck.wheelDiameter / 2 + 20
-
-  const ppm = pixelsPerMm ?? Math.min(
-    (width - 40) / geometryWidthMm,
-    (height - 40) / geometryHeightMm,
-  )
-
-  // SVG origin: axle center
-  const originX = width / 2
-  // Use groundOffsetPx to ensure alignment with SideView
-  const originY = height - groundOffsetPx - truck.wheelDiameter / 2 * ppm
-
-  /** Convert physics (Z, Y) to SVG pixels. Z is horizontal (+ = right), Y is vertical (+ = up). */
-  const toSVG = (physZ: number, physY: number): [number, number] => [
-    originX + physZ * ppm,
-    originY - physY * ppm,
-  ]
-
-  const groundY = originY + truck.wheelDiameter / 2 * ppm
-  const wheelWidth = DISPLAY_WHEEL_WIDTH_MM * steerProjection * ppm
-  // Match wheel indicator height to actual wheel diameter in this view.
-  const wheelHeight = truck.wheelDiameter * ppm
-
-  // Ellipse dimensions for wheel sides to visualize steering
-  // At 0 steering, rx=0 (vertical line). As steering increases, ellipse widens.
-  const wheelEllipseRx = (wheelHeight * Math.abs(Math.sin(steerAngleRad))) / 2
-  const wheelEllipseRy = wheelHeight / 2
-
-  const wheelOffset = DISPLAY_WHEEL_OFFSET_MM
-
-  const [leftWheelX] = toSVG(-halfTrack - wheelOffset * steerProjection, 0)
-  const [rightWheelX] = toSVG(halfTrack + wheelOffset * steerProjection, 0)
-
-  // Axle line endpoints
-  const [leftAxleX, axleY] = toSVG(-halfTrack, 0)
-  const [rightAxleX] = toSVG(halfTrack, 0)
-
-  // Hanger body (simplified rectangle between the wheel contact points)
-  const hangerTop = originY - (truck.axleToBaseplateDistance * ppm * 0.6)
-  const hangerHeight = truck.axleToBaseplateDistance * ppm * 0.6
-  const hangerHalfWidth = (halfTrack - 10) * steerProjection * ppm
 
   // Board surface computations (moved out of JSX)
   // Get the center of board position from keyGeometryCurves at the current lean angle
@@ -190,10 +134,73 @@ const FrontView: React.FC<FrontViewProps> = ({
     rotCenterY = truckGeom.rotCenterY
   }
 
-  // Compute steering angle for front view projection
+  // Compute steering angle for front view projection using the validated effectiveLeanAngleDeg
+  const pivotAxisAngleRad = (truck.pivotAxisAngle * Math.PI) / 180
+  const pivotAxisDirection: [number, number, number] = [
+    Math.cos(pivotAxisAngleRad),
+    Math.sin(pivotAxisAngleRad),
+    0,
+  ]
+  const steerResult = computeLeanToSteer(pivotAxisDirection, effectiveLeanAngleDeg)
+  const steerAngleRad = (steerResult.steerAngleDeg * Math.PI) / 180
+  
+  // Projection factor for front view (Z-axis component).
+  // Note: Using cos(steerAngle) because at 0 steering, the axle is fully along the Z axis (width factor = 1).
+  // Using sin would collapse the width to 0 at 0 steering, which is physically incorrect for a front view projection.
+  const steerProjection = Math.cos(steerAngleRad)
+
+  // Determine lean direction for wheel face occlusion
+  const isPositiveLean = steerResult.steerAngleDeg > 0
+  const isNearZeroSteer = Math.abs(steerResult.steerAngleDeg) < 0.5
+
+  // Geometry extents (in mm)
+  const halfTrack = (truck.trackWidth / 2) * steerProjection
+  const geometryWidthMm = truck.trackWidth * steerProjection + 180 // padding for board line and margins
+  const geometryHeightMm = dBoard + truck.wheelDiameter / 2 + 30  
+
+  const ppm = pixelsPerMm ?? Math.min(
+    (width - 40) / geometryWidthMm,
+    (height - 40) / geometryHeightMm,
+  )
+
+  // SVG origin: axle center
+  const originX = width / 2
+  // Use groundOffsetPx to ensure alignment with SideView
+  const originY = height - groundOffsetPx - truck.wheelDiameter / 2 * ppm
+
+  /** Convert physics (Z, Y) to SVG pixels. Z is horizontal (+ = right), Y is vertical (+ = up). */
+  const toSVG = (physZ: number, physY: number): [number, number] => [
+    originX + physZ * ppm,
+    originY - physY * ppm,
+  ]
+
+  const groundY = originY + truck.wheelDiameter / 2 * ppm
+  const wheelWidth = DISPLAY_WHEEL_WIDTH_MM * steerProjection * ppm
+  // Match wheel indicator height to actual wheel diameter in this view.
+  const wheelHeight = truck.wheelDiameter * ppm
+
+  // Ellipse dimensions for wheel sides to visualize steering
+  // At 0 steering, rx=0 (vertical line). As steering increases, ellipse widens.
+  const wheelEllipseRx = (wheelHeight * Math.abs(Math.sin(steerAngleRad))) / 2
+  const wheelEllipseRy = wheelHeight / 2
+
+  const wheelOffset = DISPLAY_WHEEL_OFFSET_MM
+
+  const [leftWheelX] = toSVG(-halfTrack - wheelOffset * steerProjection, 0)
+  const [rightWheelX] = toSVG(halfTrack + wheelOffset * steerProjection, 0)
+
+  // Axle line endpoints
+  const [leftAxleX, axleY] = toSVG(-halfTrack, 0)
+  const [rightAxleX] = toSVG(halfTrack, 0)
+
+  // Hanger body (simplified rectangle between the wheel contact points)
+  // const hangerTop = originY - (truck.axleToBaseplateDistance * ppm * 0.6)
+  // const hangerHeight = truck.axleToBaseplateDistance * ppm * 0.6
+  // const hangerHalfWidth = (halfTrack - 10) * steerProjection * ppm
+
   // Calculate tilted board endpoints
   const leanRad = (effectiveLeanAngleDeg * Math.PI) / 180
-  const boardHalfWidth = DISPLAY_BOARD_HALF_WIDTH_MM
+  const boardHalfWidth = (boardWidthMm ?? 245) / 2
   const tiltOffsetZ = boardHalfWidth * Math.cos(leanRad)
   const tiltOffsetY = boardHalfWidth * Math.sin(leanRad)
 
@@ -237,8 +244,8 @@ const FrontView: React.FC<FrontViewProps> = ({
         let leanAngleRad = Math.atan2(dx, -dy)
         let leanAngleDeg = (leanAngleRad * 180) / Math.PI
 
-        // Clamp to reasonable range (-45 to 45 degrees)
-        leanAngleDeg = Math.max(-45, Math.min(45, leanAngleDeg))
+        // Clamp to max lean angle range
+        leanAngleDeg = Math.max(-maxLeanAngle, Math.min(maxLeanAngle, leanAngleDeg))
 
         onLeanAngleChange(leanAngleDeg)
       }}
@@ -299,22 +306,40 @@ const FrontView: React.FC<FrontViewProps> = ({
           x2={leftWheelX + wheelWidth / 2}
           y2={groundY}
         />
-        {/* Outer ellipse - full on positive lean, clipped on negative lean (hide right half) */}
-        <ellipse
-          cx={leftWheelX - wheelWidth / 2}
-          cy={groundY - wheelHeight / 2}
-          rx={wheelEllipseRx}
-          ry={wheelEllipseRy}
-          clipPath={!isPositiveLean ? "url(#clip-lo-neg)" : undefined}
-        />
-        {/* Inner ellipse - clipped on positive lean (hide left half), full on negative lean */}
-        <ellipse
-          cx={leftWheelX + wheelWidth / 2}
-          cy={groundY - wheelHeight / 2}
-          rx={wheelEllipseRx}
-          ry={wheelEllipseRy}
-          clipPath={isPositiveLean ? "url(#clip-li-pos)" : undefined}
-        />
+        {/* Outer ellipse/line - full on positive lean, clipped on negative lean (hide right half) */}
+        {isNearZeroSteer ? (
+          <line
+            x1={leftWheelX - wheelWidth / 2}
+            y1={groundY - wheelHeight}
+            x2={leftWheelX - wheelWidth / 2}
+            y2={groundY}
+          />
+        ) : (
+          <ellipse
+            cx={leftWheelX - wheelWidth / 2}
+            cy={groundY - wheelHeight / 2}
+            rx={wheelEllipseRx}
+            ry={wheelEllipseRy}
+            clipPath={!isPositiveLean ? "url(#clip-lo-neg)" : undefined}
+          />
+        )}
+        {/* Inner ellipse/line - clipped on positive lean (hide left half), full on negative lean */}
+        {isNearZeroSteer ? (
+          <line
+            x1={leftWheelX + wheelWidth / 2}
+            y1={groundY - wheelHeight}
+            x2={leftWheelX + wheelWidth / 2}
+            y2={groundY}
+          />
+        ) : (
+          <ellipse
+            cx={leftWheelX + wheelWidth / 2}
+            cy={groundY - wheelHeight / 2}
+            rx={wheelEllipseRx}
+            ry={wheelEllipseRy}
+            clipPath={isPositiveLean ? "url(#clip-li-pos)" : undefined}
+          />
+        )}
       </g>
 
       {/* Right wheel */}
@@ -333,22 +358,40 @@ const FrontView: React.FC<FrontViewProps> = ({
           x2={rightWheelX + wheelWidth / 2}
           y2={groundY}
         />
-        {/* Inner ellipse - full on positive lean, clipped on negative lean (hide right half) */}
-        <ellipse
-          cx={rightWheelX - wheelWidth / 2}
-          cy={groundY - wheelHeight / 2}
-          rx={wheelEllipseRx}
-          ry={wheelEllipseRy}
-          clipPath={!isPositiveLean ? "url(#clip-ri-neg)" : undefined}
-        />
-        {/* Outer ellipse - clipped on positive lean (hide left half), full on negative lean */}
-        <ellipse
-          cx={rightWheelX + wheelWidth / 2}
-          cy={groundY - wheelHeight / 2}
-          rx={wheelEllipseRx}
-          ry={wheelEllipseRy}
-          clipPath={isPositiveLean ? "url(#clip-ro-pos)" : undefined}
-        />
+        {/* Inner ellipse/line - full on positive lean, clipped on negative lean (hide right half) */}
+        {isNearZeroSteer ? (
+          <line
+            x1={rightWheelX - wheelWidth / 2}
+            y1={groundY - wheelHeight}
+            x2={rightWheelX - wheelWidth / 2}
+            y2={groundY}
+          />
+        ) : (
+          <ellipse
+            cx={rightWheelX - wheelWidth / 2}
+            cy={groundY - wheelHeight / 2}
+            rx={wheelEllipseRx}
+            ry={wheelEllipseRy}
+            clipPath={!isPositiveLean ? "url(#clip-ri-neg)" : undefined}
+          />
+        )}
+        {/* Outer ellipse/line - clipped on positive lean (hide left half), full on negative lean */}
+        {isNearZeroSteer ? (
+          <line
+            x1={rightWheelX + wheelWidth / 2}
+            y1={groundY - wheelHeight}
+            x2={rightWheelX + wheelWidth / 2}
+            y2={groundY}
+          />
+        ) : (
+          <ellipse
+            cx={rightWheelX + wheelWidth / 2}
+            cy={groundY - wheelHeight / 2}
+            rx={wheelEllipseRx}
+            ry={wheelEllipseRy}
+            clipPath={isPositiveLean ? "url(#clip-ro-pos)" : undefined}
+          />
+        )}
       </g>
 
       {/* Axle line */}

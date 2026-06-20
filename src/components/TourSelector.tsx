@@ -5,7 +5,7 @@
  * with available tours. Selecting a tour starts it immediately.
  */
 
-import React, { useState, useRef, useEffect, useCallback } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import type { TourDefinition } from '../tours/tourTypes'
 
 /** Props for the TourSelector component. */

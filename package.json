@@ -1,14 +1,17 @@
 {
   "name": "longboard-simulator",
   "private": true,
-  "version": "0.0.1",
+  "version": "0.1.0",
   "type": "module",
+  "homepage": "http://drdeimel.github.io/longboard-setup-explorer",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "vitest"
+    "test": "vitest",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist"
   },
   "dependencies": {
     "plotly.js": "^2.35.2",
@@ -23,6 +26,7 @@
     "@types/react-dom": "^18.3.1",
     "@types/react-plotly.js": "^2.6.3",
     "@vitejs/plugin-react": "^4.3.1",
+    "gh-pages": "^6.3.0",
     "tailwindcss": "^4.0.0",
     "typescript": "~5.7.2",
     "vite": "^6.3.1",

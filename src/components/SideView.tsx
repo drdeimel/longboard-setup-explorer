@@ -23,7 +23,7 @@ import type { TruckConfig } from '../models/TruckConfig'
 import { computePivotAxis, boardSurfaceHeight } from '../geometry/pivotAxis'
 import { computeTruckGeometry } from '../geometry/truckGeometry'
 import { DISPLAY_GEOMETRY_WIDTH_MM } from '../physics/keyGeometryDataSet'
-import { UI_TEXT_MUTED, UI_TEXT_PRIMARY, UI_TEXT_SECONDARY } from '../theme/uiColors'
+import { UI_TEXT_MUTED, UI_TEXT_PRIMARY } from '../theme/uiColors'
 
 /** Props for the SideView component. */
 interface SideViewProps {
@@ -65,13 +65,17 @@ const SideView: React.FC<SideViewProps> = ({
   width = DEFAULT_WIDTH,
   height = DEFAULT_HEIGHT,
   pixelsPerMm,
-  groundOffsetPx = 20,
+  groundOffsetPx = 30,
   boardThicknessMm = 11,
 }) => {
   const dBoard = boardSurfaceHeight(
     truck.axleToBaseplateDistance,
     truck.baseplateToBoard + boardThicknessMm,
   )
+
+  // Distance of board surface to the actual ground:
+  const dBoardToGround = dBoard + truck.wheelDiameter / 2
+
   const { direction: axisDir, point: axisPoint } = computePivotAxis(
     truck.pivotAxisAngle,
     truck.rake,
@@ -80,7 +84,7 @@ const SideView: React.FC<SideViewProps> = ({
   // Determine scale: fit the geometry into the SVG with some padding
   // The geometry spans from −wheelDiameter/2 (ground) to +dBoard (board surface)
   // horizontally we'll show some range around origin
-  const geometryHeightMm = dBoard + truck.wheelDiameter / 2 + 20 // margin
+  const geometryHeightMm = dBoardToGround + 30 // margin
   const geometryWidthMm = DISPLAY_GEOMETRY_WIDTH_MM // ±100 mm from axle
 
   const ppm = pixelsPerMm ?? Math.min(
@@ -117,9 +121,9 @@ const SideView: React.FC<SideViewProps> = ({
   const axisPointY = axisPoint[1]
   
   // Check angle direction matches pivotAxisAngle configuration
-  const angleSign = Math.sign(axisDirY)
-  const expectedSign = Math.sign(Math.sin((truck.pivotAxisAngle * Math.PI) / 180))
-  const angleMatches = Math.abs(angleSign) === Math.abs(expectedSign) || Math.abs(axisDirY) < 0.001
+  // const angleSign = Math.sign(axisDirY)
+  // const expectedSign = Math.sign(Math.sin((truck.pivotAxisAngle * Math.PI) / 180))
+  // const angleMatches = Math.abs(angleSign) === Math.abs(expectedSign) || Math.abs(axisDirY) < 0.001
   
   // Calculate t values for ground and board
   // For positive direction (toward board): y = dBoard
@@ -199,7 +203,7 @@ const SideView: React.FC<SideViewProps> = ({
   // the pivot axis intersects the ground plane (y = -wheelRadius)
   // axNeg is the x-coordinate of the pivot axis ground intersection point
   const trailingMm = Math.abs(axNeg)
-  const trailingIndicatorY = groundY + 15
+  const trailingIndicatorY = groundY + 10
   const [trailingStartX] = toSVG(0, -wheelRadius) // wheel contact patch x
   const trailingEndX = svgAxNeg // pivot axis ground intersection x
 
@@ -318,7 +322,7 @@ const SideView: React.FC<SideViewProps> = ({
           fontSize={9}
           fontFamily="monospace"
         >
-          {invPendulumHeight.toFixed(1)}mm
+         inverse pendulum: {invPendulumHeight.toFixed(1)}mm
         </text>
       </g>
 
@@ -383,7 +387,7 @@ const SideView: React.FC<SideViewProps> = ({
         α={alphaDeg}°
       </text>
 
-      {/* Axle-to-board dimension (board surface height) - moved to left side */}
+      {/* Ground-to-board dimension (board surface height) - moved to left side */}
       <line
         x1={originX - 100}
         y1={groundY}
@@ -403,7 +407,7 @@ const SideView: React.FC<SideViewProps> = ({
         fontFamily="monospace"
         textAnchor="end"
       >
-        {dBoard}mm
+        total height: {dBoardToGround}mm
       </text>
 
       {/* Trailing dimension: horizontal distance from wheel contact patch to pivot axis ground intersection */}
@@ -427,7 +431,7 @@ const SideView: React.FC<SideViewProps> = ({
           fontFamily="monospace"
           textAnchor="middle"
         >
-          trailing={trailingMm.toFixed(1)}mm
+          trail: {trailingMm.toFixed(1)}mm
         </text>
       </g>
 

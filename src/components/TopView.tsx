@@ -46,6 +46,8 @@ interface TopViewProps {
   keyGeometryCurves?: { setupId: string; maxLeanDeg: number; curve: KeyGeometryResult[] }[]
   /** Global board thickness in mm, added to baseplate-to-board distance in physics computations. */
   boardThicknessMm?: number
+  /** Global board width in mm (used for board outline visualization). */
+  boardWidthMm?: number
   /** Current steering lean angle in degrees, used to display the turning circle segment. */
   steeringLeanAngleDeg?: number
 }
@@ -115,6 +117,7 @@ const TopView: React.FC<TopViewProps> = ({
   height = DEFAULT_HEIGHT,
   keyGeometryCurves,
   boardThicknessMm = 11,
+  boardWidthMm = 245,
   steeringLeanAngleDeg = 0,
 }) => {
   if (setups.length === 0) {
@@ -156,19 +159,19 @@ const TopView: React.FC<TopViewProps> = ({
   // Precompute board outline dimensions for the reference setup (drawn once)
   // Extend the board by 60mm on both sides (total 120mm extra width)
   const boardExtensionMm = 60
-  const refHalfTrack = refSetup.frontTruck.trackWidth / 2
-  const extendedHalfTrack = refHalfTrack + boardExtensionMm
+  const refHalfBoardWidth = boardWidthMm / 2
+  const extendedHalfBoardWidth = refHalfBoardWidth + boardExtensionMm
   
-  const refBoardWidthPx = (refSetup.frontTruck.trackWidth + 2 * boardExtensionMm) * icrScale
+  const refBoardWidthPx = (boardWidthMm + 2 * boardExtensionMm) * icrScale
   const refBoardKicktailLengthPx = 0.1 * refSetup.wheelbase * icrScale
   const refBoardHeightPx = refSetup.wheelbase * icrScale + 2 * refBoardKicktailLengthPx 
-  const [refBoardLeft, refBoardTop] = toSVG(-0.1 * refSetup.wheelbase, -extendedHalfTrack)
+  const [refBoardLeft, refBoardTop] = toSVG(-0.1 * refSetup.wheelbase, -extendedHalfBoardWidth)
 
   // Precompute side line positions (at actual track width)
-  const [sideLineLeftX, sideLineTopY] = toSVG(0, -refHalfTrack)
-  const [, sideLineBottomY] = toSVG(refSetup.wheelbase, -refHalfTrack)
+  const [sideLineLeftX, sideLineTopY] = toSVG(0, -refHalfBoardWidth)
+  const [, sideLineBottomY] = toSVG(refSetup.wheelbase, -refHalfBoardWidth)
   
-  const [sideLineRightX] = toSVG(0, refHalfTrack)
+  const [sideLineRightX] = toSVG(0, refHalfBoardWidth)
 
   // ── Compute / retrieve ICR curves for every setup ─────────────────────────
   // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -313,16 +316,17 @@ const TopView: React.FC<TopViewProps> = ({
       {icrData.map(({ setup, curve }) => {
         const isActive = setup.id === activeSetupId
         const opacity = isActive || !activeSetupId ? 1 : 0.3
-        const wb = setup.wheelbase
+        // const wb = setup.wheelbase
+        /*
         const halfTrack = setup.frontTruck.trackWidth / 2
-
         // Front axle endpoints
         const [frontAxleX1, frontAxleY1] = toSVG(0, -halfTrack)
         const [frontAxleX2, frontAxleY2] = toSVG(0, halfTrack)
-
         // Rear axle endpoints
         const [rearAxleX1, rearAxleY1] = toSVG(wb, -halfTrack)
         const [rearAxleX2, rearAxleY2] = toSVG(wb, halfTrack)
+        */
+
 
         // Split ICR locus into positive-Z and negative-Z branches
         const { positive, negative } = splitByZSign(curve)

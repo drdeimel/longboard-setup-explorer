@@ -51,6 +51,7 @@ function generateId(): string {
 const DEFAULT_RIDER_PARAMS: RiderParams = {
   massKg: 75,
   boardThicknessMm: 11,
+  boardWidthMm: 245,
   comHeightM: 1.0,
   maxLeanAngle: DEFAULT_MAX_LEAN,
 }
@@ -229,14 +230,13 @@ const App: React.FC = () => {
 
   const sharedViewHeightPx = Math.max(220, diagramHeightPx)
   // One floor offset for both views so the dotted ground lines overlap exactly.
-  const sharedGroundOffsetPx = Math.max(12, Math.min(40, Math.round(sharedViewHeightPx * 0.07)))
+  const sharedGroundOffsetPx = Math.max(22, Math.min(50, Math.round(sharedViewHeightPx * 0.1)))
   const availableHeightPx = Math.max(80, sharedViewHeightPx - sharedGroundOffsetPx - 16)
   const verticalPpm = Math.max(0.3, Math.min(2.5, availableHeightPx / verticalExtentBucketMm))
   // Simplified model: one shared vertical ppm only (no horizontal cap coupling).
   const sharedPpm = verticalPpm
 
   // ── Key Geometry Curves (computed once per setup when config changes) ───────
-  const DEFAULT_SAMPLES = 91
   const keyGeometryCurves = useKeyGeometryCurves(setups, riderParams)
 
   // ── Setup mutation handlers ────────────────────────────────────────────────
@@ -303,10 +303,10 @@ const App: React.FC = () => {
       <header className="flex-shrink-0 px-6 py-3 border-b border-gray-800 bg-gray-900 flex items-center justify-between">
         <div data-tour="header-title">
           <h1 className="text-xl font-bold tracking-tight text-slate-100">
-            Longboard Truck Geometry Explorer
+            Longboard Setup Explorer
           </h1>
           <p className="text-xs text-slate-300 mt-0.5">
-            Interactive visualization of truck geometry and physics. Your place to finally understand truck setups
+            Interactive visualization of longboard truck geometry and physics. Your place to finally understand truck setups
           </p>
         </div>
         <TourSelector tours={TOURS} onStartTour={handleStartTour} />
@@ -362,10 +362,12 @@ const App: React.FC = () => {
                 pixelsPerMm={sharedPpm}
                 groundOffsetPx={sharedGroundOffsetPx}
                 boardThicknessMm={riderParams.boardThicknessMm}
+                boardWidthMm={riderParams.boardWidthMm}
                 keyGeometryCurves={keyGeometryCurves}
                 activeSetupId={activeSetupId}
                 leanAngleDeg={steeringLeanAngleDeg}
                 onLeanAngleChange={setSteeringLeanAngleDeg}
+                maxLeanAngle={riderParams.maxLeanAngle}
               />
             </div>
           </div>
@@ -379,6 +381,7 @@ const App: React.FC = () => {
                 width={640}
                 height={256}
                 boardThicknessMm={riderParams.boardThicknessMm}
+                boardWidthMm={riderParams.boardWidthMm}
                 keyGeometryCurves={keyGeometryCurves}
                 steeringLeanAngleDeg={steeringLeanAngleDeg}
               />

@@ -34,11 +34,9 @@
  */
 
 import type { BushingConfig } from '../models/BushingConfig'
-import { combinedBushingTorque } from './bushingModels'
-import { combinedBushingStiffness } from './bushingModels'
+import { combinedBushingTorque, bushingStiffness } from './bushingModels'
 import { computeLeanToSteer, type LeanToSteerResult } from '../geometry/leanToSteer'
 import { computeICR } from '../geometry/turningCenter'
-import { computeRotationAxisDist } from '../geometry/rotationAxisDist'
 import { computeTruckGeometry } from '../geometry/truckGeometry'
 import type { Vec3 } from '../math/vec3'
 
@@ -67,7 +65,6 @@ export const DISPLAY_BOARD_LINE_PADDING = 20 // Padding for board line in front 
 export function computeInvPendulumHeight(
   axleToBaseplateDistance: number,
   baseplateToBoard: number,
-  boardThicknessMm: number,
   rake: number,
   pivotAxisAngleDeg: number,
 ): number {
@@ -177,7 +174,7 @@ export function computeKeyGeometry(
   roadsideBushing: BushingConfig,
   boardsideBushing: BushingConfig,
   riderMassKg: number,
-  comHeightM: number,
+  _comHeightM: number,
   leanAngleDeg: number,
   rearPivotAxisAngleDeg: number,
   rearRake: number,
@@ -189,7 +186,7 @@ export function computeKeyGeometry(
   },
 ): KeyGeometryResult {
   // Use precomputed values if provided, otherwise compute
-  const pivotAxisAngleRad = precomputed?.pivotAxisAngleRad ?? (pivotAxisAngleDeg * Math.PI / 180)
+  // const pivotAxisAngleRad = precomputed?.pivotAxisAngleRad ?? (pivotAxisAngleDeg * Math.PI / 180)
   
   // Use centralized geometry computation to ensure consistency
   const truckGeom = computeTruckGeometry(
@@ -215,6 +212,7 @@ export function computeKeyGeometry(
   )
 
   const leanRad = (leanAngleDeg * Math.PI) / 180
+  /*
   const rotationAxisDist = computeRotationAxisDist(
     pivotAxisAngleDeg,
     rake,
@@ -222,6 +220,7 @@ export function computeKeyGeometry(
     baseplateToBoard,
     leanAngleDeg,
   )
+  */
 
   //compute the effective rotation center height, i.e. the place where pivot and the hanger's vertical rotation axis intersect
   //This is measured from the axle (Y=0), not from ground
@@ -233,14 +232,12 @@ export function computeKeyGeometry(
   const centerOfForceZ =  -bushingTorqueNm * (1000 / riderForce)
   const centerOfForceY =  centerOfBoardY  - (centerOfForceZ - centerOfBoardZ) * Math.tan(leanRad) 
   const centerOfForceAngle = Math.atan2(centerOfForceZ, centerOfForceY)
-  const centerOfForceRadius = Math.sqrt(centerOfForceY*centerOfForceY + centerOfForceZ+centerOfForceZ)
-  const weightGeometricStiffness = Math.cos(centerOfForceAngle) * Math.abs(centerOfForceZ) * riderForce/1000 
-  const bushingStiffness = combinedBushingStiffness(
-    roadsideBushing,
-    boardsideBushing,
-    hangerRotationDeg,
-  )
-  const totalRotationalStiffness = bushingStiffness //+ weightGeometricStiffness
+  //const centerOfForceRadius = Math.sqrt(centerOfForceY*centerOfForceY + centerOfForceZ+centerOfForceZ)
+  const weightGeometricStiffness =  -invPendulumHeight * Math.cos(leanRad) * (riderForce  / 1000) * (Math.PI / 180)
+  const totalRotationalStiffness = 
+      bushingStiffness(roadsideBushing, hangerRotationDeg) 
+    + bushingStiffness(boardsideBushing, hangerRotationDeg)  
+    + weightGeometricStiffness
 
   const horizontalStiffness = totalRotationalStiffness / centerOfForceZ
 

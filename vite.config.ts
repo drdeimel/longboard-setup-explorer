@@ -9,6 +9,9 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  build: {
+    chunkSizeWarningLimit: 5000,
+  },
   test: {
     environment: 'node',
     include: ['src/**/*.test.ts', 'src/**/__tests__/**/*.ts'],

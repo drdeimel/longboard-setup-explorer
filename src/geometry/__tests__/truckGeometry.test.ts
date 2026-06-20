@@ -36,7 +36,6 @@ describe('computeTruckGeometry', () => {
     const expectedInvPendulumHeight = computeInvPendulumHeight(
       axleToBaseplateDistance,
       baseplateToBoard + boardThicknessMm,
-      0, // boardThicknessMm is ignored by the updated function, but we pass 0 for clarity
       rake,
       pivotAxisAngleDeg,
     )

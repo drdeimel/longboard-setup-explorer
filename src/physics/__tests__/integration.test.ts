@@ -13,7 +13,7 @@ import { computePivotAxis } from '../../geometry/pivotAxis'
 import { computeLeanToSteer } from '../../geometry/leanToSteer'
 import { computeICR } from '../../geometry/turningCenter'
 import { computeKeyGeometry, returnKeyGeometryCurves } from '../keyGeometryDataSet'
-import { bushingTorque, combinedBushingTorque, bushingMaxAngle } from '../bushingModels'
+import { combinedBushingTorque, bushingMaxAngle } from '../bushingModels'
 import { computeSteeringMoment, centripetalForce } from '../lateralForce'
 import type { BushingConfig } from '../../models/BushingConfig'
 
@@ -28,7 +28,7 @@ function approx(a: number, b: number, eps = EPS): boolean {
 }
 
 const barrelStd: BushingConfig = { shape: 'barrel', durometer: 90, height: 'standard' }
-const coneStd: BushingConfig = { shape: 'cone', durometer: 90, height: 'standard' }
+// const coneStd: BushingConfig = { shape: 'cone', durometer: 90, height: 'standard' }
 
 // ---------------------------------------------------------------------------
 // Integration: Full truck computation pipeline consistency

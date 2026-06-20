@@ -11,9 +11,8 @@
 import React, { useMemo } from 'react'
 import Plot from 'react-plotly.js'
 import type { BoardSetupConfig } from '../models/BoardSetupConfig'
-import { computePivotAxis } from '../geometry/pivotAxis'
 import { steeringMomentCurve, type SteeringMomentResult } from '../physics/lateralForce'
-import { returnKeyGeometryCurves, type KeyGeometryResult } from '../physics/keyGeometryDataSet'
+import { type KeyGeometryResult } from '../physics/keyGeometryDataSet'
 import { UI_TEXT_MUTED, UI_TEXT_PRIMARY } from '../theme/uiColors'
 
 /** Props for the SteeringMomentChart component. */

@@ -9,7 +9,7 @@ Physics engine domain.
 ## Local Contracts
 - This directory is the source of truth for all physics calculations (bushing torque, gravitational moments, lateral forces).
 - Physics models must be parameterized and unit-safe (torques in N·mm, angles in degrees, distances in mm, masses in kg).
-- Deprecated files (e.g., `returnMoment.ts`) should be phased out in favor of centralized datasets like `keyGeometryDataSet.ts`.
+- Key geometry computations are centralized in `keyGeometryDataSet.ts`.
 
 ## Work Guidance
 - Bushing models must support `cone` and `barrel` shapes with durometer and height variations.

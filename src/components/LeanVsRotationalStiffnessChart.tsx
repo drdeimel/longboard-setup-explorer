@@ -109,7 +109,7 @@ const LeanVsRotationalStiffnessChart: React.FC<LeanVsRotationalStiffnessChartPro
       data={traces}
       layout={{
         title: {
-          text: 'Rotational Stiffness',
+          text: 'Total Rotational Stiffness (Bushings + Rider weight)',
           font: { color: UI_TEXT_PRIMARY, size: 13 },
         },
         paper_bgcolor: '#0f172a',
@@ -126,6 +126,7 @@ const LeanVsRotationalStiffnessChart: React.FC<LeanVsRotationalStiffnessChartPro
           title: { text: 'Stiffness [Nm/°]', font: { size: 11 } },
           gridcolor: '#1e293b',
           zerolinecolor: '#334155',
+          range: [-3., 7.0],
           color: UI_TEXT_MUTED,
         },
         legend: {

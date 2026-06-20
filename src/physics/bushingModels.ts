@@ -42,13 +42,13 @@ const K_CONE_REFERENCE = 0.3 // N·mm per degree at 90A (base)
  * Controls how quickly the stiffness increases with rotation angle.
  * @units 1/degree²
  */
-const CONE_CUBIC_COEFFICIENT = 0.00001
+const CONE_CUBIC_COEFFICIENT = 0.0001
 
 /**
  * Mild cubic term for barrel bushings (slight progressiveness).
  * @units 1/degree²
  */
-const BARREL_CUBIC_COEFFICIENT = 0.00001
+const BARREL_CUBIC_COEFFICIENT = 0.0001
 
 /**
  * Maximum rotation angle (soft limit) for a standard-height bushing in degrees.
@@ -134,7 +134,7 @@ export function bushingMaxAngle(config: BushingConfig): number {
 export function bushingTorque(config: BushingConfig, angleDeg: number): number {
   if (config.shape === 'none') return 0
   const k = bushingBaseStiffness(config)
-  const maxAngle = bushingMaxAngle(config)
+  // const maxAngle = bushingMaxAngle(config)
   const θ = angleDeg
 
   let baseTorque = 0
@@ -144,11 +144,11 @@ export function bushingTorque(config: BushingConfig, angleDeg: number): number {
   } 
   else
   {
-    const angle_ratio = Math.abs(θ)/30.0
+    const angle_ratio = Math.abs(θ)/45.0
     const coneWidthRatio = 0.3 //the width ratio of cone's narrow and wide end'
     //const coneVolumeRatio = (coneWidthRatio*coneWidthRatio+1)/2/Math.sqrt(2)
-    const cone_nonlinearity = (coneWidthRatio + (1-coneWidthRatio) * angle_ratio)
-    baseTorque = (25.4/4.0) * k * θ * (1 + CONE_CUBIC_COEFFICIENT *  θ * θ) * cone_nonlinearity 
+    const cone_nonlinearity = (coneWidthRatio + (1-coneWidthRatio) * 0.5 * angle_ratio)
+    baseTorque = (25.4/4.0) * k * θ * (1 + CONE_CUBIC_COEFFICIENT *  θ * θ) * cone_nonlinearity
   }
 
   return baseTorque //+ bottomOutTorque
@@ -167,7 +167,7 @@ export function bushingStiffness(config: BushingConfig, angleDeg: number): numbe
   const torque_a = bushingTorque(config, angleDeg-0.5*delta_angle)
   const torque_b = bushingTorque(config, angleDeg+0.5*delta_angle)
 
-  const stiffness = (torque_b- torque_a) / delta_angle
+  const stiffness = (torque_b-torque_a) / delta_angle
   
   return stiffness
   
@@ -201,20 +201,3 @@ export function combinedBushingTorque(
   )
 }
 
-/**
- * stub
- * @param roadsideBushing
- * @param boardsideBushing 
- * @param angleDeg 
- * @returns 
- */
-export function combinedBushingStiffness(
-  roadsideBushing: BushingConfig,
-  boardsideBushing: BushingConfig,
-  angleDeg: number,
-): number {
-  return (
-    bushingStiffness(roadsideBushing, angleDeg) +
-    bushingStiffness(boardsideBushing, angleDeg)
-  )
-}
