@@ -396,7 +396,7 @@ const App: React.FC = () => {
                 keyGeometryCurves={keyGeometryCurves}
               />
             </div>
-            <div className="h-64">
+            <div className="h-64" data-tour="rotational-stiffness-chart">
               <LeanVsRotationalStiffnessChart
                 setups={setups}
                 riderMassKg={riderParams.massKg}

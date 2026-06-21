@@ -141,4 +141,46 @@ export const TOURS: TourDefinition[] = [
       },
     ],
   },
+  {
+    id: 'stiff-or-loose',
+    name: 'Stiff or loose Board?',
+    description: 'Understand what determines your board\'s rotational stiffness',
+    steps: [
+      {
+        targetSelector: '[data-tour="rotational-stiffness-chart"]',
+        title: 'Total rotational stiffness',
+        description:
+          'Total rotational stiffness determines how much you need to increase the sideways force to increase the board lean. It determines whether your board feels stiff or loose at a specific lean angle.',
+        position: 'top',
+      },
+      {
+        targetSelector: '[data-tour="roadside-bushing"], [data-tour="boardside-bushing"]',
+        title: 'Road- & Boardside bushings',
+        description:
+          'Bushings modify your board\'s stiffness in several ways.\n\nDurometer determines how hard or soft the bushing rubber is on average.\n\nBushing shape determines how stiffness changes with lean - cones will be much softer close to 0°, while barrels feel similar at multiple angles. Taller bushings push the inevitable compressive stiffening to larger lean angles.',
+        position: 'right',
+      },
+      {
+        targetSelector: '[data-tour="rider-mass"]',
+        title: 'Rider weight',
+        description:
+          'The rider weight influences stiffness too. The rider\'s weight pushes on the inverse pendulum, which reduces stiffness with increasing weight, due to an effect called geometric stiffness. If total stiffness gets close to or falls below zero, e.g. by using two soft cones, moving straight becomes very difficult.',
+        position: 'right',
+      },
+      {
+        targetSelector: '[data-tour="pivot-axis-angle"]',
+        title: 'Pivot Axis Angle',
+        description:
+          "To further complicate things, the truck's pivot angle also influences stiffness. If you increase your truck\'s angle, e.g. via angled risers, your setup will stiffen. If you de-wedge, your setup will soften.",
+        position: 'right',
+      },
+      {
+        targetSelector: '[data-tour="front-view-inv-pendulum"]',
+        title: 'Inverse Pendulum height',
+        description:
+          "Finally, the inverse pendulum height also affects stiffness - by increasing or reducing the lever for the rider's weight.",
+        position: 'right',
+      },
+    ],
+  },
 ]

@@ -173,7 +173,7 @@ const SideView: React.FC<SideViewProps> = ({
   // Annotation: pivot axis angle arc
   // Draw the arc at the pivot axis ground intersection point, showing the
   // angle between the pivot axis and the ground plane (horizontal)
-  const arcRadius = 40 * ppm
+  const arcRadius = 20 * ppm
   const alphaDeg = truck.pivotAxisAngle
   const alphaRad = (alphaDeg * Math.PI) / 180
   // Arc center is at the pivot axis ground intersection point
@@ -295,7 +295,7 @@ const SideView: React.FC<SideViewProps> = ({
             fontSize={9}
             fontFamily="monospace"
           >
-            r={truck.rake}mm
+            {truck.rake}mm
           </text>
         </>
       )}
@@ -384,7 +384,7 @@ const SideView: React.FC<SideViewProps> = ({
         fontSize={10}
         fontFamily="monospace"
       >
-        α={alphaDeg}°
+        {alphaDeg}°
       </text>
 
       {/* Ground-to-board dimension (board surface height) - moved to left side */}

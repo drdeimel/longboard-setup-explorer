@@ -442,15 +442,17 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
                       <p className="text-slate-300 text-xs font-medium mt-3 mb-1">
                         Front Truck — Geometry
                       </p>
-                      <SliderRow
-                        label="Pivot axis angle α"
-                        value={setup.frontTruck.pivotAxisAngle}
-                        min={1}
-                        max={75}
-                        step={0.5}
-                        unit="°"
-                        onChange={v => updateFrontTruck(setup.id, { pivotAxisAngle: v })}
-                      />
+                      <div data-tour="pivot-axis-angle">
+                        <SliderRow
+                          label="Pivot axis angle α"
+                          value={setup.frontTruck.pivotAxisAngle}
+                          min={1}
+                          max={75}
+                          step={0.5}
+                          unit="°"
+                          onChange={v => updateFrontTruck(setup.id, { pivotAxisAngle: v })}
+                        />
+                      </div>
                       <SliderRow
                         label="Rake r"
                         value={setup.frontTruck.rake}
@@ -473,7 +475,7 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
                         label="Baseplate-to-board"
                         value={setup.frontTruck.baseplateToBoard}
                         min={0}
-                        max={20}
+                        max={51}
                         step={1}
                         unit="mm"
                         onChange={v => updateFrontTruck(setup.id, { baseplateToBoard: v })}
@@ -510,16 +512,20 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
                       <p className="text-slate-300 text-xs font-medium mt-3 mb-1">
                         Front Truck — Bushings
                       </p>
-                      <BushingEditor
-                        label="Roadside Bushing"
-                        bushing={setup.frontTruck.roadsideBushing}
-                        onChange={b => updateFrontTruck(setup.id, { roadsideBushing: b })}
-                      />
-                      <BushingEditor
-                        label="Boardside Bushing"
-                        bushing={setup.frontTruck.boardsideBushing}
-                        onChange={b => updateFrontTruck(setup.id, { boardsideBushing: b })}
-                      />
+                      <div data-tour="roadside-bushing">
+                        <BushingEditor
+                          label="Roadside Bushing"
+                          bushing={setup.frontTruck.roadsideBushing}
+                          onChange={b => updateFrontTruck(setup.id, { roadsideBushing: b })}
+                        />
+                      </div>
+                      <div data-tour="boardside-bushing">
+                        <BushingEditor
+                          label="Boardside Bushing"
+                          bushing={setup.frontTruck.boardsideBushing}
+                          onChange={b => updateFrontTruck(setup.id, { boardsideBushing: b })}
+                        />
+                      </div>
 
                       {/* Rear truck */}
                       <p className="text-slate-300 text-xs font-medium mt-3 mb-1">
@@ -563,15 +569,17 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
         {/* ── Global Rider Parameters ── */}
         <div className="px-3 py-3 border-b border-slate-800">
           <p className="text-xs text-slate-300 uppercase tracking-wide mb-2">Rider (Global)</p>
-          <SliderRow
-            label="Mass"
-            value={riderParams.massKg}
-            min={0}
-            max={150}
-            step={1}
-            unit="kg"
-            onChange={v => onRiderParamsChange({ ...riderParams, massKg: v })}
-          />
+          <div data-tour="rider-mass">
+            <SliderRow
+              label="Mass"
+              value={riderParams.massKg}
+              min={0}
+              max={150}
+              step={1}
+              unit="kg"
+              onChange={v => onRiderParamsChange({ ...riderParams, massKg: v })}
+            />
+          </div>
           <SliderRow
             label="Board thickness"
             value={riderParams.boardThicknessMm}
@@ -604,15 +612,17 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
         {/* ── Chart Controls ── */}
         <div className="px-3 py-3">
           <p className="text-xs text-slate-300 uppercase tracking-wide mb-2">Chart Controls</p>
-          <SliderRow
-            label="Steering chart lean"
-            value={steeringLeanAngleDeg}
-            min={-riderParams.maxLeanAngle}
-            max={riderParams.maxLeanAngle}
-            step={1}
-            unit="°"
-            onChange={onSteeringLeanAngleChange}
-          />
+          <div data-tour="steering-angle-slider">
+            <SliderRow
+              label="Steering chart lean"
+              value={steeringLeanAngleDeg}
+              min={-riderParams.maxLeanAngle}
+              max={riderParams.maxLeanAngle}
+              step={1}
+              unit="°"
+              onChange={onSteeringLeanAngleChange}
+            />
+          </div>
         </div>
       </div>
     </div>

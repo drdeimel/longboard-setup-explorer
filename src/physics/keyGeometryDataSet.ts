@@ -231,7 +231,7 @@ export function computeKeyGeometry(
   const centerOfBoardY = invPendulumHeight * Math.cos(leanRad)
   const centerOfForceZ =  -bushingTorqueNm * (1000 / riderForce)
   const centerOfForceY =  centerOfBoardY  - (centerOfForceZ - centerOfBoardZ) * Math.tan(leanRad) 
-  const centerOfForceAngle = Math.atan2(centerOfForceZ, centerOfForceY)
+  // const centerOfForceAngle = Math.atan2(centerOfForceZ, centerOfForceY)
   //const centerOfForceRadius = Math.sqrt(centerOfForceY*centerOfForceY + centerOfForceZ+centerOfForceZ)
   const weightGeometricStiffness =  -invPendulumHeight * Math.cos(leanRad) * (riderForce  / 1000) * (Math.PI / 180)
   const totalRotationalStiffness = 
