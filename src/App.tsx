@@ -213,7 +213,22 @@ const App: React.FC = () => {
     setVerticalExtentBucketMm(prev => quantizeVerticalExtentMm(prev, requiredExtentMm))
   }, [requiredExtentMm])
 
+  // Track viewport width for mobile detection
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768)
+
   useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  useEffect(() => {
+    // On mobile, use fixed height since components stack vertically
+    if (isMobile) {
+      setDiagramHeightPx(280)
+      return
+    }
+
     const el = diagramsRowRef.current
     if (!el || typeof ResizeObserver === 'undefined') return
 
@@ -226,7 +241,7 @@ const App: React.FC = () => {
     const observer = new ResizeObserver(update)
     observer.observe(el)
     return () => observer.disconnect()
-  }, [])
+  }, [isMobile])
 
   const sharedViewHeightPx = Math.max(220, diagramHeightPx)
   // One floor offset for both views so the dotted ground lines overlap exactly.
@@ -312,10 +327,10 @@ const App: React.FC = () => {
         <TourSelector tours={TOURS} onStartTour={handleStartTour} />
       </header>
 
-      {/* Main two-column layout */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* ── Left: Config Panel ── */}
-        <aside className="w-96 flex-shrink-0 border-r border-gray-800 overflow-y-auto" data-testid="config-panel" data-tour="config-panel">
+      {/* Main responsive layout: single column on mobile, two-column on desktop */}
+      <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
+        {/* ── Config Panel: full width on mobile, left sidebar on desktop ── */}
+        <aside className="w-full md:w-96 md:flex-shrink-0 border-b md:border-b-0 md:border-r border-gray-800 overflow-y-auto" data-testid="config-panel" data-tour="config-panel">
           <ConfigPanel
             setups={setups}
             activeSetupId={activeSetupId}
@@ -338,7 +353,7 @@ const App: React.FC = () => {
           </div>
 
           {/* Row 1: Side/Front SVG diagrams */}
-          <div ref={diagramsRowRef} className="grid grid-cols-2 gap-4">
+          <div ref={diagramsRowRef} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Side View */}
             <div className="col-span-1 w-full" data-tour="side-view">
               <SideView
@@ -373,7 +388,7 @@ const App: React.FC = () => {
           </div>
 
           {/* Row 2: Charts grid */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="h-64" data-tour="top-view">
               <TopView
                 setups={setups}
@@ -430,7 +445,7 @@ const App: React.FC = () => {
           </div>
 
           {/* Row 3: Turning geometry charts */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="h-64">
               <LeanVsTurningRadiusChart
                 setups={setups}
