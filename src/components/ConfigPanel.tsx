@@ -277,6 +277,8 @@ interface ConfigPanelProps {
   onSteeringLeanAngleChange: (deg: number) => void
   /** Called when a preset is loaded (creates a new setup from preset). */
   onLoadPreset: (presetConfig: Omit<BoardSetupConfig, 'id' | 'name' | 'color'>, presetLabel: string) => void
+  /** Called when the user clicks "Share current" to copy a shareable link. */
+  onShare: () => void
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -301,8 +303,16 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
   onRiderParamsChange,
   onSteeringLeanAngleChange,
   onLoadPreset,
+  onShare,
 }) => {
   const [expandedSetupId, setExpandedSetupId] = useState<string | null>(activeSetupId)
+  const [shareCopied, setShareCopied] = useState(false)
+
+  const handleShareClick = () => {
+    onShare()
+    setShareCopied(true)
+    setTimeout(() => setShareCopied(false), 2000)
+  }
 
   /** Update a field on the front truck of a setup. */
   const updateFrontTruck = (setupId: string, patch: Partial<TruckConfig>) => {
@@ -355,7 +365,16 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
 
         {/* ── Setup List ── */}
         <div className="px-3 py-3 border-b border-slate-800">
-          <p className="text-xs text-slate-300 uppercase tracking-wide mb-2">Setups</p>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-xs text-slate-300 uppercase tracking-wide">Setups</p>
+            <button
+              className="px-2 py-1 text-xs rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
+              onClick={handleShareClick}
+              title="Copy shareable link for current configuration"
+            >
+              {shareCopied ? '✓ Copied!' : '🔗 Share current'}
+            </button>
+          </div>
           <div className="space-y-1">
             {setups.map(setup => {
               const isExpanded = expandedSetupId === setup.id

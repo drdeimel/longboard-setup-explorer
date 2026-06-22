@@ -33,6 +33,7 @@ import LeanVsBushingTorqueChart from './components/LeanVsBushingTorqueChart'
 import LeanVsTurningRadiusChart from './components/LeanVsTurningRadiusChart'
 import LeanVsCentripetalAxisChart from './components/LeanVsCentripetalAxisChart'
 import { saveState, loadState } from './persistence/localStorage'
+import { readStateFromUrl, buildShareUrl, type UrlState } from './utils/urlState'
 import { useKeyGeometryCurves } from './geometry/keyGeometryCache'
 import { TOURS } from './tours/tourDefinitions'
 import TourOverlay from './components/TourOverlay'
@@ -67,22 +68,32 @@ function buildDefaultSetup(): BoardSetupConfig {
   }
 }
 
-/** Build the initial app state: try localStorage first, fall back to defaults. */
+/** Build the initial app state: try URL first, then localStorage, fall back to defaults. */
 function buildInitialState(): {
   setups: BoardSetupConfig[]
   activeSetupId: string
   riderParams: RiderParams
   steeringLeanAngleDeg: number
+  fromUrl: boolean
 } {
-  const persisted = loadState()
-  if (persisted) return persisted
+  // Priority 1: URL shared state
+  const urlState = readStateFromUrl()
+  if (urlState) {
+    return { ...urlState, fromUrl: true }
+  }
 
+  // Priority 2: localStorage
+  const persisted = loadState()
+  if (persisted) return { ...persisted, fromUrl: false }
+
+  // Priority 3: defaults
   const defaultSetup = buildDefaultSetup()
   return {
     setups: [defaultSetup],
     activeSetupId: defaultSetup.id,
     riderParams: DEFAULT_RIDER_PARAMS,
     steeringLeanAngleDeg: 0,
+    fromUrl: false,
   }
 }
 
@@ -136,6 +147,33 @@ const App: React.FC = () => {
   const [steeringLeanAngleDeg, setSteeringLeanAngleDeg] = useState<number>(
     initial.steeringLeanAngleDeg,
   )
+
+  // ── URL shared state confirmation dialog ──────────────────────────────────
+  const [showUrlConfirm, setShowUrlConfirm] = useState(initial.fromUrl)
+
+  const handleAcceptShared = useCallback(() => {
+    setShowUrlConfirm(false)
+    window.history.replaceState(null, '', window.location.pathname)
+  }, [])
+
+  const handleRejectShared = useCallback(() => {
+    window.history.replaceState(null, '', window.location.pathname)
+    setShowUrlConfirm(false)
+    const persisted = loadState()
+    if (persisted) {
+      setSetups(persisted.setups)
+      setActiveSetupId(persisted.activeSetupId)
+      setRiderParams(persisted.riderParams)
+      setSteeringLeanAngleDeg(persisted.steeringLeanAngleDeg)
+    } else {
+      const defaultSetup = buildDefaultSetup()
+      setSetups([defaultSetup])
+      setActiveSetupId(defaultSetup.id)
+      setRiderParams(DEFAULT_RIDER_PARAMS)
+      setSteeringLeanAngleDeg(0)
+    }
+  }, [])
+
   // ── Tour state ─────────────────────────────────────────────────────────────
   const [activeTourId, setActiveTourId] = useState<string | null>(null)
   const [currentStep, setCurrentStep] = useState<number>(0)
@@ -310,10 +348,43 @@ const App: React.FC = () => {
     [setups],
   )
 
+  // ── Share handler ──────────────────────────────────────────────────────────
+  const handleShare = useCallback(() => {
+    const state: UrlState = { setups, riderParams, activeSetupId, steeringLeanAngleDeg }
+    const url = buildShareUrl(state)
+    navigator.clipboard.writeText(url)
+  }, [setups, riderParams, activeSetupId, steeringLeanAngleDeg])
+
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100 flex flex-col">
+      {/* ── Shared setup confirmation dialog ── */}
+      {showUrlConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="bg-slate-800 border border-slate-600 rounded-lg p-6 max-w-sm mx-4 shadow-xl">
+            <h2 className="text-lg font-semibold text-slate-100 mb-2">Load shared setup?</h2>
+            <p className="text-sm text-slate-300 mb-4">
+              A shared configuration was detected in the URL. Load it now? Your current setups will be preserved.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                className="px-4 py-2 text-sm rounded bg-slate-700 hover:bg-slate-600 text-slate-200 transition-colors"
+                onClick={handleRejectShared}
+              >
+                Dismiss
+              </button>
+              <button
+                className="px-4 py-2 text-sm rounded bg-blue-600 hover:bg-blue-500 text-white transition-colors"
+                onClick={handleAcceptShared}
+              >
+                Load setup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="flex-shrink-0 px-6 py-3 border-b border-gray-800 bg-gray-900 flex items-center justify-between">
         <div data-tour="header-title">
@@ -356,6 +427,7 @@ const App: React.FC = () => {
             onRiderParamsChange={setRiderParams}
             onSteeringLeanAngleChange={setSteeringLeanAngleDeg}
             onLoadPreset={handleLoadPreset}
+            onShare={handleShare}
           />
         </aside>
 
