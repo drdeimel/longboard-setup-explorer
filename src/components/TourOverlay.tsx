@@ -41,6 +41,7 @@ const TourOverlay: React.FC<TourOverlayProps> = ({
   onExit,
 }) => {
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null)
+  const [tooltipPosition, setTooltipPosition] = useState<React.CSSProperties>({})
   const tooltipRef = useRef<HTMLDivElement>(null)
 
   const step: TourStep | undefined = tour.steps[currentStep]
@@ -58,6 +59,8 @@ const TourOverlay: React.FC<TourOverlayProps> = ({
       const el = document.querySelector(step.targetSelector)
       if (el && isMounted) {
         setTargetRect(el.getBoundingClientRect())
+        // Scroll the target element into view smoothly
+        el.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' })
       } else if (isMounted) {
         // Retry after a short delay (element may not be rendered yet)
         timeoutId = setTimeout(findTarget, 100)
@@ -86,6 +89,69 @@ const TourOverlay: React.FC<TourOverlayProps> = ({
       window.removeEventListener('scroll', handleResize, true)
     }
   }, [step?.targetSelector, currentStep])
+
+  // Clamp tooltip position to viewport bounds
+  useEffect(() => {
+    if (!targetRect || !tooltipRef.current) return
+
+    const tooltip = tooltipRef.current
+    const tooltipRect = tooltip.getBoundingClientRect()
+    const viewportWidth = window.innerWidth
+    const viewportHeight = window.innerHeight
+    const margin = 16 // margin from viewport edges
+
+    // Calculate initial position based on step.position
+    const { top: targetTop, left: targetLeft, width, height } = targetRect
+    const pos = step.position ?? 'bottom'
+    let top: number
+    let left: number
+    let transform: string
+
+    switch (pos) {
+      case 'top':
+        top = targetTop - 12
+        left = targetLeft + width / 2
+        transform = 'translateX(-50%) translateY(-100%)'
+        break
+      case 'left':
+        top = targetTop + height / 2
+        left = targetLeft - 12
+        transform = 'translateY(-50%) translateX(-100%)'
+        break
+      case 'right':
+        top = targetTop + height / 2
+        left = targetLeft + width + 12
+        transform = 'translateY(-50%)'
+        break
+      case 'center':
+        top = targetTop + height / 2
+        left = targetLeft + width / 2
+        transform = 'translate(-50%, -50%)'
+        break
+      default: // bottom
+        top = targetTop + height + 12
+        left = targetLeft + width / 2
+        transform = 'translateX(-50%)'
+    }
+
+    // Ensure tooltip stays within horizontal bounds
+    if (left + tooltipRect.width > viewportWidth - margin) {
+      left = viewportWidth - tooltipRect.width - margin
+    }
+    if (left < margin) {
+      left = margin
+    }
+
+    // Ensure tooltip stays within vertical bounds
+    if (top + tooltipRect.height > viewportHeight - margin) {
+      top = viewportHeight - tooltipRect.height - margin
+    }
+    if (top < margin) {
+      top = margin
+    }
+
+    setTooltipPosition({ top, left, transform })
+  }, [targetRect, step.position])
 
   // Keyboard navigation
   const handleKeyDown = useCallback(
@@ -147,7 +213,7 @@ const TourOverlay: React.FC<TourOverlayProps> = ({
           boxShadow: '0 0 0 9999px rgba(0, 0, 0, 0.5), 0 0 20px rgba(96, 165, 250, 0.3)',
           zIndex: 9999,
           pointerEvents: 'none',
-          transition: 'all 0.3s ease',
+          transition: 'all 0.8s ease',
         }}
       />
 
@@ -157,7 +223,7 @@ const TourOverlay: React.FC<TourOverlayProps> = ({
         style={{
           position: 'fixed',
           zIndex: 10000,
-          ...getTooltipPosition(targetRect, step.position ?? 'bottom'),
+          ...tooltipPosition,
           maxWidth: 360,
           minWidth: 280,
           backgroundColor: '#1e293b',
@@ -247,55 +313,6 @@ const TourOverlay: React.FC<TourOverlayProps> = ({
       </div>
     </>
   )
-}
-
-/**
- * Calculate the absolute position of the tooltip based on target rect and position.
- */
-function getTooltipPosition(
-  targetRect: DOMRect,
-  position: 'top' | 'bottom' | 'left' | 'right' | 'center',
-): React.CSSProperties {
-  const { top, left, width, height } = targetRect
-
-  switch (position) {
-    case 'top':
-      return {
-        top: top - 12,
-        left: left + width / 2,
-        transform: 'translateX(-50%) translateY(-100%)',
-      }
-    case 'bottom':
-      return {
-        top: top + height + 12,
-        left: left + width / 2,
-        transform: 'translateX(-50%)',
-      }
-    case 'left':
-      return {
-        top: top + height / 2,
-        left: left - 12,
-        transform: 'translateY(-50%) translateX(-100%)',
-      }
-    case 'right':
-      return {
-        top: top + height / 2,
-        left: left + width + 12,
-        transform: 'translateY(-50%)',
-      }
-    case 'center':
-      return {
-        top: top + height / 2,
-        left: left + width / 2,
-        transform: 'translate(-50%, -50%)',
-      }
-    default:
-      return {
-        top: top + height + 12,
-        left: left + width / 2,
-        transform: 'translateX(-50%)',
-      }
-  }
 }
 
 export default TourOverlay

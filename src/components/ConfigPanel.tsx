@@ -432,8 +432,8 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
                   {isExpanded && (
                     <div className="px-3 pb-3 border-t border-slate-800">
                       {/* Front truck geometry */}
-                      <p className="text-slate-300 text-xs font-medium mt-3 mb-1">
-                        Front Truck — Geometry
+                      <p className="text-slate-300 text-xs font-bold text-center mt-3 mb-1">
+                        Front Truck:
                       </p>
                       <div data-tour="pivot-axis-angle">
                         <SliderRow
@@ -465,9 +465,9 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
                         onChange={v => updateFrontTruck(setup.id, { axleToBaseplateDistance: v })}
                       />
                       <SliderRow
-                        label="Riser Height"
+                        label="Riser/Drop Height"
                         value={setup.frontTruck.baseplateToBoard}
-                        min={0}
+                        min={-51}
                         max={51}
                         step={1}
                         unit="mm"
@@ -502,27 +502,27 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
                       />
 
                       {/* Front truck bushings */}
-                      <p className="text-slate-300 text-xs font-medium mt-3 mb-1">
-                        Front Truck — Bushings
+                      <p className="text-slate-300 text-xs font-bold text-center mt-3 mb-1">
+                        Bushings
                       </p>
                       <div data-tour="roadside-bushing">
                         <BushingEditor
-                          label="Bushing Roadside"
+                          label="Roadside"
                           bushing={setup.frontTruck.roadsideBushing}
                           onChange={b => updateFrontTruck(setup.id, { roadsideBushing: b })}
                         />
                       </div>
                       <div data-tour="boardside-bushing">
                         <BushingEditor
-                          label="Bushing Boardside"
+                          label="Boardside"
                           bushing={setup.frontTruck.boardsideBushing}
                           onChange={b => updateFrontTruck(setup.id, { boardsideBushing: b })}
                         />
                       </div>
 
                       {/* Rear truck */}
-                      <p className="text-slate-300 text-xs font-medium mt-3 mb-1">
-                        Rear Truck
+                      <p className="text-slate-300 text-xs font-bold text-center mt-3 mb-1">
+                        Rear Truck:
                       </p>
                       <SliderRow
                         label="Wheel Base"
@@ -543,7 +543,7 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
                         onChange={v => updateRearTruck(setup.id, { pivotAxisAngle: v })}
                       />
                       <SliderRow
-                        label="Rake r"
+                        label="Rake"
                         value={setup.rearTruck.rake}
                         min={-15}
                         max={15}
