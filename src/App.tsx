@@ -329,8 +329,21 @@ const App: React.FC = () => {
 
       {/* Main responsive layout: single column on mobile, two-column on desktop */}
       <div className="flex flex-col md:flex-row flex-1 overflow-hidden">
-        {/* ── Config Panel: full width on mobile, left sidebar on desktop ── */}
-        <aside className="w-full md:w-96 md:flex-shrink-0 border-b md:border-b-0 md:border-r border-gray-800 overflow-y-auto" data-testid="config-panel" data-tour="config-panel">
+        {/* ── SideView: first on mobile, part of diagram grid on desktop ── */}
+        <div className="order-1 md:order-2 w-full md:hidden p-4 pb-0" data-tour="side-view">
+          <SideView
+            truck={activeSetup.frontTruck}
+            color={activeSetup.color}
+            width={500}
+            height={sharedViewHeightPx}
+            pixelsPerMm={sharedPpm}
+            groundOffsetPx={sharedGroundOffsetPx}
+            boardThicknessMm={riderParams.boardThicknessMm}
+          />
+        </div>
+
+        {/* ── Config Panel: second on mobile, left sidebar on desktop ── */}
+        <aside className="order-2 md:order-1 w-full md:w-96 md:flex-shrink-0 border-b md:border-b-0 md:border-r border-gray-800 overflow-y-auto" data-testid="config-panel" data-tour="config-panel">
           <ConfigPanel
             setups={setups}
             activeSetupId={activeSetupId}
@@ -347,15 +360,15 @@ const App: React.FC = () => {
         </aside>
 
         {/* ── Right: Diagrams + Charts ── */}
-        <main className="flex-1 overflow-y-auto p-4 space-y-4">
+        <main className="order-3 md:order-3 flex-1 overflow-y-auto p-4 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-medium text-gray-200 ml-1">Truck Diagrams</h2>
           </div>
 
           {/* Row 1: Side/Front SVG diagrams */}
           <div ref={diagramsRowRef} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Side View */}
-            <div className="col-span-1 w-full" data-tour="side-view">
+            {/* Side View - hidden on mobile (shown above), shown on desktop */}
+            <div className="hidden md:block col-span-1 w-full" data-tour="side-view">
               <SideView
                 truck={activeSetup.frontTruck}
                 color={activeSetup.color}

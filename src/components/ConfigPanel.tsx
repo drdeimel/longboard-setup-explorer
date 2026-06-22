@@ -336,13 +336,6 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
 
   return (
     <div className="flex flex-col h-full overflow-hidden bg-slate-900">
-      {/* Header */}
-      <div className="flex-shrink-0 px-4 py-3 border-b border-slate-700">
-        <h2 className="text-sm font-semibold text-slate-300 uppercase tracking-wider">
-          Configuration
-        </h2>
-      </div>
-
       <div className="flex-1 overflow-y-auto">
         {/* ── Presets ── */}
         <div className="px-3 py-3 border-b border-slate-800">
@@ -463,7 +456,7 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
                         onChange={v => updateFrontTruck(setup.id, { rake: v })}
                       />
                       <SliderRow
-                        label="Axle-to-baseplate"
+                        label="Axle-Baseplate Height"
                         value={setup.frontTruck.axleToBaseplateDistance}
                         min={20}
                         max={70}
@@ -472,7 +465,7 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
                         onChange={v => updateFrontTruck(setup.id, { axleToBaseplateDistance: v })}
                       />
                       <SliderRow
-                        label="Baseplate-to-board"
+                        label="Riser Height"
                         value={setup.frontTruck.baseplateToBoard}
                         min={0}
                         max={51}
@@ -481,7 +474,7 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
                         onChange={v => updateFrontTruck(setup.id, { baseplateToBoard: v })}
                       />
                       <SliderRow
-                        label="Wheel diameter"
+                        label="Wheel Diameter"
                         value={setup.frontTruck.wheelDiameter}
                         min={60}
                         max={240}
@@ -490,7 +483,7 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
                         onChange={v => updateFrontTruck(setup.id, { wheelDiameter: v })}
                       />
                       <SliderRow
-                        label="Track width"
+                        label="Track Width"
                         value={setup.frontTruck.trackWidth}
                         min={150}
                         max={280}
@@ -499,7 +492,7 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
                         onChange={v => updateFrontTruck(setup.id, { trackWidth: v })}
                       />
                       <SliderRow
-                        label="Bushing moment arm"
+                        label="Bushing Diameter"
                         value={setup.frontTruck.bushingMomentArm}
                         min={10}
                         max={50}
@@ -514,14 +507,14 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
                       </p>
                       <div data-tour="roadside-bushing">
                         <BushingEditor
-                          label="Roadside Bushing"
+                          label="Bushing Roadside"
                           bushing={setup.frontTruck.roadsideBushing}
                           onChange={b => updateFrontTruck(setup.id, { roadsideBushing: b })}
                         />
                       </div>
                       <div data-tour="boardside-bushing">
                         <BushingEditor
-                          label="Boardside Bushing"
+                          label="Bushing Boardside"
                           bushing={setup.frontTruck.boardsideBushing}
                           onChange={b => updateFrontTruck(setup.id, { boardsideBushing: b })}
                         />
@@ -532,7 +525,7 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
                         Rear Truck
                       </p>
                       <SliderRow
-                        label="Wheelbase"
+                        label="Wheel Base"
                         value={setup.wheelbase}
                         min={400}
                         max={1100}
