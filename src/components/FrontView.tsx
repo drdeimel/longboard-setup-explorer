@@ -19,7 +19,7 @@
  * - Axle-to-board height annotation
  */
 
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 import type { TruckConfig } from '../models/TruckConfig'
 import { boardSurfaceHeight } from '../geometry/pivotAxis'
 import { computeTruckGeometry } from '../geometry/truckGeometry'
@@ -88,7 +88,20 @@ const FrontView: React.FC<FrontViewProps> = ({
   boardWidthMm = 245,
   maxLeanAngle = 30,
 }) => {
-  const [isDragging, setIsDragging] = useState(false)
+  const [dragTarget, setDragTarget] = useState<'board' | 'force' | null>(null)
+  const isDragging = dragTarget !== null
+
+  // Refs for force-drag velocity animation
+  const animFrameRef = useRef<number>(0)
+  const lastMouseXRef = useRef<number>(0)
+  const lastTimeRef = useRef<number>(0)
+  const leanAngleRef = useRef<number>(leanAngleDeg)
+  const centerForceXSvgRef = useRef<number>(0)
+
+  // Keep leanAngleRef in sync with prop
+  useEffect(() => {
+    leanAngleRef.current = leanAngleDeg
+  }, [leanAngleDeg])
 
   const dBoard = boardSurfaceHeight(
     truck.axleToBaseplateDistance,
@@ -215,6 +228,52 @@ const FrontView: React.FC<FrontViewProps> = ({
   const [centerForceXSvg, centerForceYSvg] = toSVG(centerForceZ, centerForceY)
   const [rotCenterXSvg, rotCenterYSvg] = toSVG(0, rotCenterY)
 
+  // Keep ref in sync for animation callback
+  centerForceXSvgRef.current = centerForceXSvg
+
+  // Velocity-based lean angle animation for force arrow drag
+  // Rate: 100°/s per board width of horizontal distance
+  const animateForceDrag = useCallback((timestamp: number) => {
+    if (dragTarget !== 'force' || !onLeanAngleChange) return
+
+    const dt = lastTimeRef.current ? (timestamp - lastTimeRef.current) / 1000 : 0
+    lastTimeRef.current = timestamp
+
+    // Horizontal distance from arrow center in pixels (use ref to avoid recreating callback)
+    const dxPx = lastMouseXRef.current - centerForceXSvgRef.current
+    // Convert to board widths (boardWidthMm * ppm pixels = 1 board width)
+    const boardWidthPx = boardWidthMm * ppm
+    const boardWidths = dxPx / boardWidthPx
+    // Angular velocity: 100°/s per board width
+    const angularVelocity = boardWidths * 100 // °/s
+
+    // Update lean angle
+    let newAngle = leanAngleRef.current + angularVelocity * dt
+    newAngle = Math.max(-maxLeanAngle, Math.min(maxLeanAngle, newAngle))
+    leanAngleRef.current = newAngle
+    onLeanAngleChange(newAngle)
+
+    animFrameRef.current = requestAnimationFrame(animateForceDrag)
+  }, [dragTarget, onLeanAngleChange, boardWidthMm, ppm, maxLeanAngle])
+
+  // Start/stop animation based on drag state
+  useEffect(() => {
+    if (dragTarget === 'force') {
+      lastTimeRef.current = 0
+      animFrameRef.current = requestAnimationFrame(animateForceDrag)
+    } else {
+      if (animFrameRef.current) {
+        cancelAnimationFrame(animFrameRef.current)
+        animFrameRef.current = 0
+      }
+    }
+    return () => {
+      if (animFrameRef.current) {
+        cancelAnimationFrame(animFrameRef.current)
+      }
+    }
+  }, [dragTarget, animateForceDrag])
+
   return (
     <svg
       width="100%"
@@ -234,23 +293,29 @@ const FrontView: React.FC<FrontViewProps> = ({
         const mouseX = (e.clientX - svgRect.left) * scaleX
         const mouseY = (e.clientY - svgRect.top) * scaleY
 
-        // Calculate angle from rotation center to mouse position
-        // In SVG coordinates: X increases right, Y increases down
-        const dx = mouseX - rotCenterXSvg
-        const dy = mouseY - rotCenterYSvg
+        if (dragTarget === 'board') {
+          // Board drag: direct angle control
+          // Calculate angle from rotation center to mouse position
+          // In SVG coordinates: X increases right, Y increases down
+          const dx = mouseX - rotCenterXSvg
+          const dy = mouseY - rotCenterYSvg
 
-        // Calculate lean angle: atan2(dx, -dy) gives angle from vertical
-        // -dy because in SVG Y is positive downward, but physics Y is positive upward
-        let leanAngleRad = Math.atan2(dx, -dy)
-        let leanAngleDeg = (leanAngleRad * 180) / Math.PI
+          // Calculate lean angle: atan2(dx, -dy) gives angle from vertical
+          // -dy because in SVG Y is positive downward, but physics Y is positive upward
+          let leanAngleRad = Math.atan2(dx, -dy)
+          let leanAngleDeg = (leanAngleRad * 180) / Math.PI
 
-        // Clamp to max lean angle range
-        leanAngleDeg = Math.max(-maxLeanAngle, Math.min(maxLeanAngle, leanAngleDeg))
+          // Clamp to max lean angle range
+          leanAngleDeg = Math.max(-maxLeanAngle, Math.min(maxLeanAngle, leanAngleDeg))
 
-        onLeanAngleChange(leanAngleDeg)
+          onLeanAngleChange(leanAngleDeg)
+        } else if (dragTarget === 'force') {
+          // Force drag: update mouse position for velocity calculation
+          lastMouseXRef.current = mouseX
+        }
       }}
-      onMouseUp={() => setIsDragging(false)}
-      onMouseLeave={() => setIsDragging(false)}
+      onMouseUp={() => setDragTarget(null)}
+      onMouseLeave={() => setDragTarget(null)}
     >
       <defs>
         {/* Left wheel outer ellipse (clipped on negative lean): hide right half (keep x <= cx) */}
@@ -412,29 +477,49 @@ const FrontView: React.FC<FrontViewProps> = ({
           points={`${boardStartX},${boardStartY} ${boardEndX},${boardEndY} ${boardEndX + normalOffsetX},${boardEndY + normalOffsetY} ${boardStartX + normalOffsetX},${boardStartY + normalOffsetY}`}
           fill="#334155"
         />
-        {/* Draggable board center point - drag to set lean angle */}
+        {/* Draggable board center point - drag to set lean angle (direct angle control) */}
         <circle
           cx={boardCenterXSvg}
           cy={boardCenterYSvg}
           r={8}
           fill={color}
-          fillOpacity={isDragging ? 0.5 : 0.3}
+          fillOpacity={dragTarget === 'board' ? 0.5 : 0.3}
           stroke="#fff"
           strokeWidth={1.5}
           className="cursor-grab"
-          style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+          style={{ cursor: dragTarget === 'board' ? 'grabbing' : 'grab' }}
           onMouseDown={(e) => {
             e.preventDefault()
             e.stopPropagation()
-            setIsDragging(true)
+            setDragTarget('board')
           }}
         />
-        {/* Center-of-force indicator: short, thick gravity arrow (downward). */}
+        {/* Center-of-force indicator: draggable gravity arrow (velocity-based lean control) */}
         <defs>
           <marker id="gravity-arrow-tip" markerWidth={4} markerHeight={4} refX={2} refY={2} orient="auto">
             <path d="M0,0 L4,2 L0,4 Z" fill="#94a3b8" />
           </marker>
         </defs>
+        {/* Invisible wider hit area for the arrow */}
+        <line
+          x1={centerForceXSvg}
+          y1={centerForceYSvg - 35}
+          x2={centerForceXSvg}
+          y2={centerForceYSvg - 5}
+          stroke="transparent"
+          strokeWidth={20}
+          className="cursor-ew-resize"
+          onMouseDown={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            // Initialize mouse position for velocity calculation
+            const svgRect = e.currentTarget.closest('svg')!.getBoundingClientRect()
+            const scaleX = width / Math.max(1, svgRect.width)
+            lastMouseXRef.current = (e.clientX - svgRect.left) * scaleX
+            setDragTarget('force')
+          }}
+        />
+        {/* Visible arrow */}
         <line
           x1={centerForceXSvg}
           y1={centerForceYSvg - 30}
@@ -443,7 +528,18 @@ const FrontView: React.FC<FrontViewProps> = ({
           stroke="#94a3b8"
           strokeWidth={4}
           markerEnd="url(#gravity-arrow-tip)"
+          pointerEvents="none"
         />
+        <text
+          x={centerForceXSvg}
+          y={centerForceYSvg - 36}
+          fill="#94a3b8"
+          fontSize={9}
+          fontFamily="monospace"
+          textAnchor="middle"
+        >
+          Rider weight
+        </text>
         <text
           x={boardEndX + 4}
           y={boardEndY + 4}
@@ -528,7 +624,6 @@ const FrontView: React.FC<FrontViewProps> = ({
       >
         w={truck.trackWidth}mm
       </text>
-
 
       {/* Axis labels */}
     </svg>

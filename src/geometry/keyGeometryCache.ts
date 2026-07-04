@@ -56,6 +56,8 @@ export function useKeyGeometryCurves(
         rearTruck.pivotAxisAngle,
         rearTruck.rake,
         setup.wheelbase,
+        truck.trackWidth,
+        truck.wheelDiameter,
       )
       
       return {

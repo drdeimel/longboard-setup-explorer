@@ -5,7 +5,7 @@
  * - Setup list: color swatch, editable name, duplicate button, delete button
  * - Per-setup parameter sliders (front truck full set, rear truck minimal, wheelbase)
  * - Global rider parameters: rider mass, CoM height
- * - Preset configurations: Standard RKP 50°, Standard TKP, High-angle RKP 65°
+ * - Library instantiation: create setups from URL-based library entries
  *
  * Invariants enforced here (per AGENTS.md §5):
  * - Delete is disabled (not hidden) when only 1 setup exists
@@ -17,71 +17,7 @@ import type { BoardSetupConfig } from '../models/BoardSetupConfig'
 import type { TruckConfig } from '../models/TruckConfig'
 import type { RearTruckConfig } from '../models/RearTruckConfig'
 import type { BushingConfig } from '../models/BushingConfig'
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Preset configurations
-// ─────────────────────────────────────────────────────────────────────────────
-
-const PRESET_STANDARD_RKP_50: Omit<BoardSetupConfig, 'id' | 'name' | 'color'> = {
-  wheelbase: 760,
-  frontTruck: {
-    type: 'single-pivot',
-    pivotAxisAngle: 50,
-    rake: 0,
-    axleToBaseplateDistance: 38,
-    baseplateToBoard: 4,
-    wheelDiameter: 150,
-    trackWidth: 218,
-    bushingMomentArm: 25,
-    roadsideBushing: { shape: 'cone', durometer: 90, height: 'standard' },
-    boardsideBushing: { shape: 'barrel', durometer: 90, height: 'standard' },
-  },
-  rearTruck: { pivotAxisAngle: 47, rake: 0 },
-}
-
-const PRESET_STANDARD_TKP: Omit<BoardSetupConfig, 'id' | 'name' | 'color'> = {
-  wheelbase: 740,
-  frontTruck: {
-    type: 'single-pivot',
-    pivotAxisAngle: 35,
-    rake: 3,
-    axleToBaseplateDistance: 32,
-    baseplateToBoard: 3,
-    wheelDiameter: 104,
-    trackWidth: 205,
-    bushingMomentArm: 20,
-    roadsideBushing: { shape: 'barrel', durometer: 88, height: 'standard' },
-    boardsideBushing: { shape: 'barrel', durometer: 88, height: 'standard' },
-  },
-  rearTruck: { pivotAxisAngle: 35, rake: 3 },
-}
-
-const PRESET_HIGH_ANGLE_RKP_65: Omit<BoardSetupConfig, 'id' | 'name' | 'color'> = {
-  wheelbase: 720,
-  frontTruck: {
-    type: 'single-pivot',
-    pivotAxisAngle: 65,
-    rake: 0,
-    axleToBaseplateDistance: 42,
-    baseplateToBoard: 5,
-    wheelDiameter: 160,
-    trackWidth: 230,
-    bushingMomentArm: 28,
-    roadsideBushing: { shape: 'cone', durometer: 85, height: 'tall' },
-    boardsideBushing: { shape: 'barrel', durometer: 85, height: 'standard' },
-  },
-  rearTruck: { pivotAxisAngle: 50, rake: 0 },
-}
-
-/** The three available preset configurations. */
-export const PRESETS: Array<{
-  label: string
-  config: Omit<BoardSetupConfig, 'id' | 'name' | 'color'>
-}> = [
-  { label: 'Standard RKP 50°', config: PRESET_STANDARD_RKP_50 },
-  { label: 'Standard TKP', config: PRESET_STANDARD_TKP },
-  { label: 'High-angle RKP 65°', config: PRESET_HIGH_ANGLE_RKP_65 },
-]
+import { LIBRARY, getSetupFromLibraryEntry } from '../models/truckLibrary'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Color palette for auto-assigning setup colors
@@ -347,19 +283,23 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
   return (
     <div className="flex flex-col h-full overflow-hidden bg-slate-900">
       <div className="flex-1 overflow-y-auto">
-        {/* ── Presets ── */}
+        {/* ── Library ── */}
         <div className="px-3 py-3 border-b border-slate-800">
           <p className="text-xs text-slate-300 uppercase tracking-wide mb-2">Instantiate from Library:</p>
           <div className="flex flex-wrap gap-2">
-            {PRESETS.map(preset => (
-              <button
-                key={preset.label}
-                className="px-2 py-1 text-xs rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
-                onClick={() => onLoadPreset(preset.config, preset.label)}
-              >
-                {preset.label}
-              </button>
-            ))}
+            {LIBRARY.map(entry => {
+              const config = getSetupFromLibraryEntry(entry)
+              if (!config) return null
+              return (
+                <button
+                  key={entry.label}
+                  className="px-2 py-1 text-xs rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
+                  onClick={() => onLoadPreset(config, entry.label)}
+                >
+                  {entry.label}
+                </button>
+              )
+            })}
           </div>
         </div>
 
@@ -504,12 +444,16 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
                       <SliderRow
                         label="Track Width"
                         value={setup.frontTruck.trackWidth}
-                        min={150}
+                        min={100}
                         max={280}
                         step={1}
                         unit="mm"
                         onChange={v => updateFrontTruck(setup.id, { trackWidth: v })}
                       />
+                      {/* Front truck bushings */}
+                      <p className="text-slate-300 text-xs font-bold text-center mt-3 mb-1">
+                        Bushings
+                      </p>
                       <SliderRow
                         label="Bushing Diameter"
                         value={setup.frontTruck.bushingMomentArm}
@@ -519,11 +463,6 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
                         unit="mm"
                         onChange={v => updateFrontTruck(setup.id, { bushingMomentArm: v })}
                       />
-
-                      {/* Front truck bushings */}
-                      <p className="text-slate-300 text-xs font-bold text-center mt-3 mb-1">
-                        Bushings
-                      </p>
                       <div data-tour="roadside-bushing">
                         <BushingEditor
                           label="Roadside"

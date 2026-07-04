@@ -19,10 +19,10 @@ import type { BoardSetupConfig } from './models/BoardSetupConfig'
 import { DEFAULT_MAX_LEAN } from './models/BoardSetupConfig'
 import ConfigPanel, {
   type RiderParams,
-  PRESETS,
   SETUP_COLORS,
   nextColor,
 } from './components/ConfigPanel'
+import { LIBRARY, getSetupFromLibraryEntry } from './models/truckLibrary'
 import SideView from './components/SideView'
 import FrontView from './components/FrontView'
 import TopView from './components/TopView'
@@ -57,43 +57,56 @@ const DEFAULT_RIDER_PARAMS: RiderParams = {
   maxLeanAngle: DEFAULT_MAX_LEAN,
 }
 
-/** Build the default initial setup from the Standard RKP 50° preset. */
+/** Build the default initial setup from the first library entry. */
 function buildDefaultSetup(): BoardSetupConfig {
-  const preset = PRESETS[0]
+  const entry = LIBRARY[0]
+  const config = getSetupFromLibraryEntry(entry)
+  // Fallback if library entry is invalid (should not happen with valid URLs)
+  if (!config) {
+    return {
+      id: generateId(),
+      name: 'Default',
+      color: SETUP_COLORS[0],
+      wheelbase: 760,
+      frontTruck: {
+        type: 'single-pivot',
+        pivotAxisAngle: 50,
+        rake: 0,
+        axleToBaseplateDistance: 38,
+        baseplateToBoard: 4,
+        wheelDiameter: 150,
+        trackWidth: 218,
+        bushingMomentArm: 25,
+        roadsideBushing: { shape: 'cone', durometer: 90, height: 'standard' },
+        boardsideBushing: { shape: 'barrel', durometer: 90, height: 'standard' },
+      },
+      rearTruck: { pivotAxisAngle: 47, rake: 0 },
+    }
+  }
   return {
     id: generateId(),
-    name: preset.label,
+    name: entry.label,
     color: SETUP_COLORS[0],
-    ...preset.config,
+    ...config,
   }
 }
 
-/** Build the initial app state: try URL first, then localStorage, fall back to defaults. */
+/** Build the initial app state: try localStorage first, fall back to defaults. */
 function buildInitialState(): {
   setups: BoardSetupConfig[]
   activeSetupId: string
   riderParams: RiderParams
   steeringLeanAngleDeg: number
-  fromUrl: boolean
 } {
-  // Priority 1: URL shared state
-  const urlState = readStateFromUrl()
-  if (urlState) {
-    return { ...urlState, fromUrl: true }
-  }
-
-  // Priority 2: localStorage
   const persisted = loadState()
-  if (persisted) return { ...persisted, fromUrl: false }
+  if (persisted) return persisted
 
-  // Priority 3: defaults
   const defaultSetup = buildDefaultSetup()
   return {
     setups: [defaultSetup],
     activeSetupId: defaultSetup.id,
     riderParams: DEFAULT_RIDER_PARAMS,
     steeringLeanAngleDeg: 0,
-    fromUrl: false,
   }
 }
 
@@ -149,29 +162,46 @@ const App: React.FC = () => {
   )
 
   // ── URL shared state confirmation dialog ──────────────────────────────────
-  const [showUrlConfirm, setShowUrlConfirm] = useState(initial.fromUrl)
+  const [pendingUrlState] = useState<UrlState | null>(() => readStateFromUrl())
+  const [showUrlConfirm, setShowUrlConfirm] = useState(() => readStateFromUrl() !== null)
 
   const handleAcceptShared = useCallback(() => {
-    setShowUrlConfirm(false)
+    if (!pendingUrlState) return
     window.history.replaceState(null, '', window.location.pathname)
-  }, [])
+    setShowUrlConfirm(false)
+
+    // Merge shared setups into existing: replace by name match, append new ones
+    setSetups(prev => {
+      const merged = [...prev]
+      for (const shared of pendingUrlState.setups) {
+        const existingIdx = merged.findIndex(s => s.name === shared.name)
+        if (existingIdx >= 0) {
+          // Replace existing setup with same name, keep existing ID
+          merged[existingIdx] = { ...shared, id: merged[existingIdx].id }
+        } else {
+          // Append new setup with fresh ID
+          merged.push({ ...shared, id: generateId() })
+        }
+      }
+      return merged
+    })
+    // Apply shared rider params and lean angle
+    setRiderParams(pendingUrlState.riderParams)
+    setSteeringLeanAngleDeg(pendingUrlState.steeringLeanAngleDeg)
+    // Switch to the first shared setup if it exists
+    if (pendingUrlState.setups.length > 0) {
+      const firstName = pendingUrlState.setups[0].name
+      setSetups(current => {
+        const match = current.find(s => s.name === firstName)
+        if (match) setActiveSetupId(match.id)
+        return current
+      })
+    }
+  }, [pendingUrlState])
 
   const handleRejectShared = useCallback(() => {
     window.history.replaceState(null, '', window.location.pathname)
     setShowUrlConfirm(false)
-    const persisted = loadState()
-    if (persisted) {
-      setSetups(persisted.setups)
-      setActiveSetupId(persisted.activeSetupId)
-      setRiderParams(persisted.riderParams)
-      setSteeringLeanAngleDeg(persisted.steeringLeanAngleDeg)
-    } else {
-      const defaultSetup = buildDefaultSetup()
-      setSetups([defaultSetup])
-      setActiveSetupId(defaultSetup.id)
-      setRiderParams(DEFAULT_RIDER_PARAMS)
-      setSteeringLeanAngleDeg(0)
-    }
   }, [])
 
   // ── Tour state ─────────────────────────────────────────────────────────────
@@ -363,9 +393,9 @@ const App: React.FC = () => {
       {showUrlConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
           <div className="bg-slate-800 border border-slate-600 rounded-lg p-6 max-w-sm mx-4 shadow-xl">
-            <h2 className="text-lg font-semibold text-slate-100 mb-2">Load shared setup?</h2>
+            <h2 className="text-lg font-semibold text-slate-100 mb-2">Import shared setup?</h2>
             <p className="text-sm text-slate-300 mb-4">
-              A shared configuration was detected in the URL. Load it now? Your current setups will be preserved.
+              A shared configuration was detected in the URL. Setups with matching names will be updated, new ones will be added. Your existing setups are preserved.
             </p>
             <div className="flex gap-3 justify-end">
               <button
@@ -378,7 +408,7 @@ const App: React.FC = () => {
                 className="px-4 py-2 text-sm rounded bg-blue-600 hover:bg-blue-500 text-white transition-colors"
                 onClick={handleAcceptShared}
               >
-                Load setup
+                Import
               </button>
             </div>
           </div>

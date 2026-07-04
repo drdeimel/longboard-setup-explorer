@@ -144,6 +144,7 @@ export interface KeyGeometryResult {
    * null if trucks steer identically (parallel trucks).
    */
   turningCurvature: number
+
 }
 
 /**
@@ -162,6 +163,8 @@ export interface KeyGeometryResult {
  * @param rearPivotAxisAngleDeg - Rear truck pivot axis angle (degrees).
  * @param rearRake              - Rear truck rake (mm).
  * @param wheelbase             - Distance between front and rear axles (mm).
+ * @param trackWidth            - Track width (mm). Optional; required for wheel-board clearance.
+ * @param wheelDiameter         - Wheel diameter (mm). Optional; required for wheel-board clearance.
  * @param precomputed           - Pre-computed lean-invariant values (optional, computed if not provided).
  * @returns Return moment breakdown at the given lean angle.
  */
@@ -179,6 +182,8 @@ export function computeKeyGeometry(
   rearPivotAxisAngleDeg: number,
   rearRake: number,
   wheelbase: number,
+  _trackWidth: number = 0,
+  _wheelDiameter: number = 0,
   precomputed?: {
     pivotAxisAngleRad: number
     invPendulumHeight: number
@@ -289,6 +294,8 @@ export function computeKeyGeometry(
  * @param rearPivotAxisAngleDeg   - Rear truck pivot axis angle (degrees).
  * @param rearRake                - Rear truck rake (mm).
  * @param wheelbase               - Distance between front and rear axles (mm).
+ * @param trackWidth              - Track width (mm). Optional; required for wheel-board clearance.
+ * @param wheelDiameter           - Wheel diameter (mm). Optional; required for wheel-board clearance.
  * @returns Array of return moment results over the lean angle range.
  */
 export function returnKeyGeometryCurves(
@@ -307,6 +314,8 @@ export function returnKeyGeometryCurves(
   rearPivotAxisAngleDeg: number,
   rearRake: number,
   wheelbase: number,
+  trackWidth: number = 0,
+  wheelDiameter: number = 0,
 ): KeyGeometryResult[] {
   const results: KeyGeometryResult[] = []
   const step = (maxLeanDeg - minLeanDeg) / (numSamples - 1)
@@ -344,6 +353,8 @@ export function returnKeyGeometryCurves(
         rearPivotAxisAngleDeg,
         rearRake,
         wheelbase,
+        trackWidth,
+        wheelDiameter,
         precomputed,
       ),
     )
