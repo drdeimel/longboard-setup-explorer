@@ -251,6 +251,7 @@ const TopView: React.FC<TopViewProps> = ({
     return {
       points: toPolylinePoints(pts),
       color: activeCurveData.setup.color,
+      radiusMm: isStraight ? null : R,
     }
   }, [icrData, activeSetupId, steeringLeanAngleDeg, maxWheelbase])
 
@@ -386,6 +387,20 @@ const TopView: React.FC<TopViewProps> = ({
           opacity={0.6}
           strokeLinejoin="round"
         />
+      )}
+
+      {/* Turning radius display */}
+      {turningArc?.radiusMm != null && turningArc.radiusMm < 99900 && (
+        <text
+          x={originX}
+          y={refBoardTop - 23}
+          fill={UI_TEXT_MUTED}
+          fontSize={13}
+          fontFamily="monospace"
+          textAnchor="middle"
+        >
+          Turning radius: {(turningArc.radiusMm / 1000).toFixed(1)}m
+        </text>
       )}
       </g>
 

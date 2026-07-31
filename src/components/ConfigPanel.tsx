@@ -432,6 +432,10 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
                         unit="mm"
                         onChange={v => updateFrontTruck(setup.id, { baseplateToBoard: v })}
                       />
+                      {/* Wheels */}
+                      <p className="text-slate-300 text-xs font-bold text-center mt-3 mb-1">
+                        Wheels
+                      </p>
                       <SliderRow
                         label="Wheel Diameter"
                         value={setup.frontTruck.wheelDiameter}
@@ -442,13 +446,22 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
                         onChange={v => updateFrontTruck(setup.id, { wheelDiameter: v })}
                       />
                       <SliderRow
-                        label="Track Width"
-                        value={setup.frontTruck.trackWidth}
-                        min={100}
-                        max={280}
+                        label="Axle Width"
+                        value={setup.frontTruck.axleWidth ?? (setup.frontTruck.trackWidth - 24) / 2}
+                        min={80}
+                        max={240}
                         step={1}
                         unit="mm"
-                        onChange={v => updateFrontTruck(setup.id, { trackWidth: v })}
+                        onChange={v => updateFrontTruck(setup.id, { axleWidth: v, trackWidth: v + 2 * (setup.frontTruck.wheelOffset ?? 0) + 24 })}
+                      />
+                      <SliderRow
+                        label="Wheel Offset"
+                        value={setup.frontTruck.wheelOffset ?? 0}
+                        min={0}
+                        max={30}
+                        step={1}
+                        unit="mm"
+                        onChange={v => updateFrontTruck(setup.id, { wheelOffset: v, trackWidth: (setup.frontTruck.axleWidth ?? (setup.frontTruck.trackWidth - 24) / 2) + 2 * v + 24 })}
                       />
                       {/* Front truck bushings */}
                       <p className="text-slate-300 text-xs font-bold text-center mt-3 mb-1">

@@ -93,10 +93,27 @@ export interface TruckConfig {
    * Track width `w_track` — lateral distance between the two wheel contact
    * patches (hanger width, side to side). Used as the moment arm when
    * computing steering moment from a lateral centripetal force.
+   * Computed as: axleWidth + 2*wheelOffset + 24mm
    * @units mm
    * @minimum 100
    */
   trackWidth: number
+
+  /**
+   * Axle width — lateral distance between the inner edges of the hanger
+   * where the wheels mount. The base measurement for track width.
+   * @units mm
+   * @minimum 80
+   */
+  axleWidth?: number
+
+  /**
+   * Wheel offset — lateral distance from the hanger edge to the wheel
+   * centerline. Accounts for spacer/washer width and wheel bearing position.
+   * @units mm
+   * @minimum 0
+   */
+  wheelOffset?: number
 
   /**
    * Bushing moment arm `d_bushing` — distance along the pivot axis from the

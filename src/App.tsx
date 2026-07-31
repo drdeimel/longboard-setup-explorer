@@ -76,6 +76,8 @@ function buildDefaultSetup(): BoardSetupConfig {
         baseplateToBoard: 4,
         wheelDiameter: 150,
         trackWidth: 218,
+        axleWidth: 170,
+        wheelOffset: 12,
         bushingMomentArm: 25,
         roadsideBushing: { shape: 'cone', durometer: 90, height: 'standard' },
         boardsideBushing: { shape: 'barrel', durometer: 90, height: 'standard' },
