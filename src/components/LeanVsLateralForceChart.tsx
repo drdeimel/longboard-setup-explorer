@@ -32,8 +32,8 @@ const LeanVsLateralForceChart: React.FC<LeanVsLateralForceChartProps> = ({
     const curve = entry?.curve ?? []
     const isActive = setup.id === activeSetupId
     return {
-      x: curve.map(r => r.leanAngleDeg),
-      y: curve.map(r => -r.lateralForceEquilibriumN),
+      x: curve.map(r => -r.lateralForceEquilibriumN),
+      y: curve.map(r => r.leanAngleDeg),
       type: 'scatter' as const,
       mode: 'lines' as const,
       name: setup.name,
@@ -44,8 +44,8 @@ const LeanVsLateralForceChart: React.FC<LeanVsLateralForceChartProps> = ({
       opacity: isActive || !activeSetupId ? 1 : 0.4,
       hovertemplate:
         `<b>${setup.name}</b><br>` +
-        'Lean: %{x:.1f}°<br>' +
-        'F_lat eq: %{y:.1f} N<extra></extra>',
+        'F_lat eq: %{x:.1f} N<br>' +
+        'Lean: %{y:.1f}°<extra></extra>',
     }
   })
 
@@ -63,17 +63,17 @@ const LeanVsLateralForceChart: React.FC<LeanVsLateralForceChartProps> = ({
         plot_bgcolor: '#0f172a',
         font: { color: UI_TEXT_PRIMARY, size: 11 },
         xaxis: {
+          title: { text: 'Lateral Force [N]', font: { size: 11 } },
+          gridcolor: '#1e293b',
+          zerolinecolor: '#334155',
+          color: UI_TEXT_MUTED,
+        },
+        yaxis: {
           title: { text: 'Lean [°]', font: { size: 11 } },
           gridcolor: '#1e293b',
           zerolinecolor: '#334155',
           color: UI_TEXT_MUTED,
           range: [-axisMaxLean, axisMaxLean],
-        },
-        yaxis: {
-          title: { text: 'Lateral Force [N]', font: { size: 11 } },
-          gridcolor: '#1e293b',
-          zerolinecolor: '#334155',
-          color: UI_TEXT_MUTED,
         },
         legend: {
           bgcolor: 'transparent',
