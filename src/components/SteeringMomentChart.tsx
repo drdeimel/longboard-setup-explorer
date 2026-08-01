@@ -73,6 +73,7 @@ const SteeringMomentChart: React.FC<SteeringMomentChartProps> = ({
         -maxForceN,
         maxForceN,
         numSamples,
+        truck.wheelDiameter,
       )
       const isActive = setup.id === activeSetupId
       return {

@@ -32,6 +32,7 @@ import SteeringMomentChart from './components/SteeringMomentChart'
 import LeanVsBushingTorqueChart from './components/LeanVsBushingTorqueChart'
 import LeanVsTurningRadiusChart from './components/LeanVsTurningRadiusChart'
 import LeanVsCentripetalAxisChart from './components/LeanVsCentripetalAxisChart'
+import LeanVsLateralForceChart from './components/LeanVsLateralForceChart'
 import { saveState, loadState } from './persistence/localStorage'
 import { readStateFromUrl, buildShareUrl, type UrlState } from './utils/urlState'
 import { useKeyGeometryCurves } from './geometry/keyGeometryCache'
@@ -545,6 +546,13 @@ const App: React.FC = () => {
                 comHeightM={riderParams.comHeightM}
                 boardThicknessMm={riderParams.boardThicknessMm}
                 leanAngleDeg={steeringLeanAngleDeg}
+                activeSetupId={activeSetupId}
+                keyGeometryCurves={keyGeometryCurves}
+              />
+            </div>
+            <div className="h-64">
+              <LeanVsLateralForceChart
+                setups={setups}
                 activeSetupId={activeSetupId}
                 keyGeometryCurves={keyGeometryCurves}
               />

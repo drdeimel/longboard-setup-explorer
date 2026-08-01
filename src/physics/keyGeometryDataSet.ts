@@ -38,6 +38,7 @@ import { combinedBushingTorque, bushingStiffness } from './bushingModels'
 import { computeLeanToSteer, type LeanToSteerResult } from '../geometry/leanToSteer'
 import { computeICR } from '../geometry/turningCenter'
 import { computeTruckGeometry } from '../geometry/truckGeometry'
+import { computeSteeringMoment } from './lateralForce'
 import type { Vec3 } from '../math/vec3'
 
 /** Default visualization constants for the truck views. */
@@ -145,6 +146,21 @@ export interface KeyGeometryResult {
    */
   turningCurvature: number
 
+  /**
+   * Total rotational torque = bushingTorqueNm + gravitational torque contribution.
+   * Gravitational term = integral of weightGeometricStiffness over lean angle
+   * = -invPendulumHeight × (riderForce / 1000) × sin(φ_rad)   [N·m]
+   */
+  totalRotationalTorqueNm: number
+
+  /**
+   * Lateral force (N) at which the total rotational torque (bushing + gravitational)
+   * exactly balances the steering moment produced by that force at this lean angle.
+   * Computed as: totalRotationalTorqueNm * 1000 / steeringMomentFactor
+   * where steeringMomentFactor = M_steer [N·mm] per 1 N of lateral force.
+   */
+  lateralForceEquilibriumN: number
+
 }
 
 /**
@@ -183,7 +199,7 @@ export function computeKeyGeometry(
   rearRake: number,
   wheelbase: number,
   _trackWidth: number = 0,
-  _wheelDiameter: number = 0,
+  wheelDiameter: number = 0,
   precomputed?: {
     pivotAxisAngleRad: number
     invPendulumHeight: number
@@ -259,6 +275,33 @@ export function computeKeyGeometry(
   const turningCenterZ: number | null = icrResult.icr?.z ?? null
   const turningCurvature: number = icrResult.turningCurvature
 
+  // Total rotational torque: integral of totalRotationalStiffness over lean angle.
+  // = bushingTorqueNm  +  ∫₀^φ weightGeometricStiffness(φ') dφ'
+  //
+  // weightGeometricStiffness(φ') = -invPendulumHeight × cos(φ') × (riderForce/1000) × (π/180)
+  // Integrating analytically:
+  //   ∫₀^φ cos(φ') dφ' = sin(φ)   [in radians]
+  // so the gravitational torque contribution is:
+  //   M_grav = -invPendulumHeight × (riderForce / 1000) × sin(φ_rad)   [N·m]
+  const gravitationalTorqueNm = -invPendulumHeight * (riderForce / 1000) * Math.sin(leanRad)
+  const totalRotationalTorqueNm = bushingTorqueNm - gravitationalTorqueNm
+
+  // Lateral force equilibrium: the lateral force at which the steering moment
+  // equals the total rotational torque (bushing + gravitational) at this lean angle.
+  // steeringMomentFactor [N·mm / N] = M_steer for 1 N of lateral force at this lean.
+  const steeringMomentFactorNmmPerN = computeSteeringMoment(
+    1,
+    pivotAxisAngleDeg,
+    rake,
+    axleToBaseplateDistance,
+    baseplateToBoard,
+    leanAngleDeg,
+    wheelDiameter,
+  ).steeringMomentNmm
+  const lateralForceEquilibriumN = steeringMomentFactorNmmPerN !== 0
+    ? (totalRotationalTorqueNm * 1000) / steeringMomentFactorNmmPerN
+    : 0
+
   return {
     leanAngleDeg,
     hangerRotationDeg,
@@ -269,10 +312,12 @@ export function computeKeyGeometry(
     centerOfForceZ,
     bushingTorqueNm,
     totalRotationalStiffness,
+    totalRotationalTorqueNm,
     horizontalStiffness,
     turningCenterX,
     turningCenterZ,
     turningCurvature,
+    lateralForceEquilibriumN,
   }
 }
 
