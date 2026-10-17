@@ -17,6 +17,7 @@ Physics engine domain.
 - Steering moment (`lateralForce.ts`) sums two independent moments: `F × d_invPendulum(φ)` (board-level arm, lean-dependent) and `F × cos(δ(φ)) × trail × cos(α)` (ground-contact arm, scaled by steer angle cosine). Requires `wheelDiameter` for the trail term; defaults to 0.
 - `KeyGeometryResult.lateralForceEquilibriumN`: lateral force at which steering moment equals bushing torque at a given lean angle. Computed in `keyGeometryDataSet.ts` using `computeSteeringMoment` with unit force.
 - `KeyGeometryResult.frontSteerAngleDeg` exposes the front lean-to-steer result for centralized top-view propulsion visualization.
+- `KeyGeometryResult.rearSteerAngleDeg` exposes the rear lean-to-steer result for the rotated top-view rear axle indicator.
 - All physics functions must be pure and deterministic for reliable charting and testing.
 - changing or implmementing the physical models requires extra diligence for implementation inaccuracies. Equations should have clear meanings and be well documented, ideally with well-known concepts.
 

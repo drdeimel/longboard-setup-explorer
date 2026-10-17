@@ -1,27 +1,22 @@
 /**
- * TopView component — top-down board diagram (XZ plane) with ICR locus.
+ * TopView component — top-down board diagram (XZ plane) with propulsion windrose.
  *
  * Shows the board from above, rotated 90° CCW relative to the XZ-plane axes:
  * - X axis (vertical, +down on screen) = forward board direction (front at top, rear at bottom)
  * - Z axis (horizontal, +right on screen) = lateral right / heel side
  *
- * The rotated layout places the board as a narrow vertical strip in the centre
- * while the ICR locus expands left/right, filling the wide-box viewport well.
+ * The rotated layout places the board horizontally in the centre of the viewport.
  *
  * Elements drawn:
  * - Board outline (rectangle from front to rear axle with board width)
- * - Front truck axle (horizontal line at Y = originY, spanning ±trackWidth/2)
- * - Rear truck axle (horizontal line at Y = originY + wheelbase*scale, spanning ±trackWidth/2)
- * - ICR locus: two colored polylines (positive-Z and negative-Z branches)
- * - Multiple setups overlaid if multiple configs provided
+ * - Front and rear truck axles as vertical lines spanning the board width
+ * - Positive propulsion windrose for the active setup and lean angle
  */
 
 import React, { useMemo } from 'react'
 import type { BoardSetupConfig } from '../models/BoardSetupConfig'
-import { DEFAULT_MAX_LEAN } from '../models/BoardSetupConfig'
-import { computePivotAxis } from '../geometry/pivotAxis'
 import { computePositivePropulsionWindrose, type PropulsionWindroseSample } from '../geometry/propulsionWindrose'
-import { returnKeyGeometryCurves, type KeyGeometryResult } from '../physics/keyGeometryDataSet'
+import type { KeyGeometryResult } from '../physics/keyGeometryDataSet'
 import { UI_TEXT_MUTED, UI_TEXT_PRIMARY, UI_TEXT_SECONDARY } from '../theme/uiColors'
 
 /** Props for the TopView component. */
@@ -55,53 +50,11 @@ interface TopViewProps {
 
 const DEFAULT_WIDTH = 360
 const DEFAULT_HEIGHT = 220
-const DEFAULT_SAMPLES = 91
-
-// ICR can be very far from the board — scale to show more area
-const ICR_VIEW_SCALE = 0.16 // pixels per mm — 2x scale to make board appear 100% larger
+// Keep the board and windrose in a shared physical scale.
+const TOP_VIEW_SCALE = 0.48 // pixels per mm; 3x zoom
 const WINDROSE_DIAMETER_MM = 700
 const WINDROSE_SAMPLE_COUNT = 32
 const WINDROSE_CENTER_FRACTION_OF_WHEELBASE = 0.15
-
-/**
- * Split a flat KeyGeometryResult array into two contiguous sub-arrays by the
- * sign of turningCenterZ.  Points with null turningCenterZ (ICR at infinity,
- * i.e. straight-ahead) are discarded.
- *
- * The locus naturally forms two branches: Z > 0 (heel-side ICR, lean one way)
- * and Z < 0 (toe-side ICR, lean the other way).  Connecting them with a
- * single polyline would draw a spurious line crossing the diagram from one
- * side to the other.
- *
- * @param curve - Full curve over symmetric lean range.
- * @returns Two arrays: points with Z ≥ 0 and points with Z < 0.
- */
-function splitByZSign(
-  curve: KeyGeometryResult[],
-): { positive: KeyGeometryResult[]; negative: KeyGeometryResult[] } {
-  const positive: KeyGeometryResult[] = []
-  const negative: KeyGeometryResult[] = []
-  for (const r of curve) {
-    if (r.turningCenterX === null || r.turningCenterZ === null) continue
-    if (r.turningCenterZ >= 0) {
-      positive.push(r)
-    } else {
-      negative.push(r)
-    }
-  }
-  return { positive, negative }
-}
-
-/**
- * Build an SVG polyline `points` attribute string from an array of (svgX,
- * svgY) tuples.
- *
- * @param pts - Array of [svgX, svgY] pixel coordinates.
- * @returns Space-separated "x,y" pairs suitable for the SVG `points` attribute.
- */
-function toPolylinePoints(pts: [number, number][]): string {
-  return pts.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ')
-}
 
 function windroseWedgePath(
   centerX: number,
@@ -114,21 +67,20 @@ function windroseWedgePath(
   // Render leaves from the opposite end of each force direction.
   const angleRad = (sample.appliedAngleDeg * Math.PI) / 180 + Math.PI
   const point = (angle: number): [number, number] => [
-    centerX + radius * Math.sin(angle),
-    centerY + radius * Math.cos(angle),
+    centerX + radius * Math.cos(angle),
+    centerY - radius * Math.sin(angle),
   ]
   const [x1, y1] = point(angleRad - halfWidthRad)
   const [x2, y2] = point(angleRad + halfWidthRad)
   return `M ${centerX.toFixed(1)} ${centerY.toFixed(1)} L ${x1.toFixed(1)} ${y1.toFixed(1)} A ${radius.toFixed(1)} ${radius.toFixed(1)} 0 0 1 ${x2.toFixed(1)} ${y2.toFixed(1)} Z`
 }
 
+function toPolylinePoints(points: [number, number][]): string {
+  return points.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ')
+}
+
 /**
- * TopView — top-down board diagram with ICR locus for all active setups.
- *
- * ICR data is taken from `keyGeometryCurves` when provided (preferred) or
- * computed locally as a fallback.  The locus is split into two separate
- * polylines by Z sign so the two branches (heel-lean and toe-lean sides) are
- * rendered independently without a connecting segment.
+ * TopView — top-down board diagram with the active propulsion windrose.
  *
  * @param props - Setup configurations, pre-computed curves, and display options.
  * @returns SVG element showing top-down view.
@@ -139,7 +91,7 @@ const TopView: React.FC<TopViewProps> = ({
   width = DEFAULT_WIDTH,
   height = DEFAULT_HEIGHT,
   keyGeometryCurves,
-  boardThicknessMm = 11,
+  boardThicknessMm: _boardThicknessMm = 11,
   boardWidthMm = 245,
   steeringLeanAngleDeg = 0,
 }) => {
@@ -158,25 +110,19 @@ const TopView: React.FC<TopViewProps> = ({
   const refSetup = setups.find(s => s.id === activeSetupId) ?? setups[0]
   const maxWheelbase = Math.max(...setups.map(s => s.wheelbase))
 
-  // ICR locus can extend very far — use a dedicated scale to show more area
-  const icrScale = ICR_VIEW_SCALE
+  const icrScale = TOP_VIEW_SCALE
 
-  // ICR clipping range in mm — discard points that would be off-screen
-  const icrClipMm = Math.max(maxWheelbase * 10, 10000)
-
-  // SVG origin: front axle center.
-  // After the 90° CCW rotation X maps to vertical and Z maps to horizontal.
-  // Centre the wheelbase vertically and keep the ICR (Z) centred horizontally.
-  const originX = width / 2
-  const originY = height / 2 - maxWheelbase * icrScale * 0.5
+  // SVG origin: centre of the wheelbase after a 90° CCW rotation.
+  const originX = width / 2 - maxWheelbase * icrScale * 0.5
+  const originY = height / 2
 
   /** Convert physics (X, Z) to SVG pixel coordinates (90° CCW rotated view).
-   *  physX (forward) → vertical: front at top, rear at bottom.
-   *  physZ (lateral) → horizontal: heel side (+Z) to the right.
+   *  physX (forward) → horizontal: front at left, rear at right.
+   *  physZ (lateral) → vertical: heel side (+Z) goes upward.
    */
   const toSVG = (physX: number, physZ: number): [number, number] => [
-    originX + physZ * icrScale, // Z lateral = rightward on screen
-    originY + physX * icrScale, // X forward = downward on screen
+    originX + physX * icrScale,
+    originY - physZ * icrScale,
   ]
 
   // Precompute board outline dimensions for the reference setup (drawn once)
@@ -185,101 +131,16 @@ const TopView: React.FC<TopViewProps> = ({
   const refHalfBoardWidth = boardWidthMm / 2
   const extendedHalfBoardWidth = refHalfBoardWidth + boardExtensionMm
   
-  const refBoardWidthPx = (boardWidthMm + 2 * boardExtensionMm) * icrScale
-  const refBoardKicktailLengthPx = 0.1 * refSetup.wheelbase * icrScale
-  const refBoardHeightPx = refSetup.wheelbase * icrScale + 2 * refBoardKicktailLengthPx 
-  const [refBoardLeft, refBoardTop] = toSVG(-0.1 * refSetup.wheelbase, -extendedHalfBoardWidth)
+  const refBoardWidthPx = refSetup.wheelbase * icrScale + 2 * 0.1 * refSetup.wheelbase * icrScale
+  const refBoardHeightPx = (boardWidthMm + 2 * boardExtensionMm) * icrScale
+  const [refBoardLeft, refBoardTop] = toSVG(-0.1 * refSetup.wheelbase, extendedHalfBoardWidth)
 
   // Precompute side line positions (at actual track width)
-  const [sideLineLeftX, sideLineTopY] = toSVG(0, -refHalfBoardWidth)
-  const [, sideLineBottomY] = toSVG(refSetup.wheelbase, -refHalfBoardWidth)
-  
-  const [sideLineRightX] = toSVG(0, refHalfBoardWidth)
-
-  // ── Compute / retrieve ICR curves for every setup ─────────────────────────
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const icrData = useMemo(() => {
-    return setups.map(setup => {
-      const precomputed = keyGeometryCurves?.find(k => k.setupId === setup.id)
-      const maxLeanDeg = precomputed?.maxLeanDeg ?? DEFAULT_MAX_LEAN
-      const curve = precomputed?.curve ?? returnKeyGeometryCurves(
-        computePivotAxis(setup.frontTruck.pivotAxisAngle, setup.frontTruck.rake).direction,
-        setup.frontTruck.pivotAxisAngle,
-        setup.frontTruck.rake,
-        setup.frontTruck.axleToBaseplateDistance,
-        boardThicknessMm + setup.frontTruck.baseplateToBoard,
-        setup.frontTruck.roadsideBushing,
-        setup.frontTruck.boardsideBushing,
-        75,     // default rider mass fallback (kg)
-        1.0,    // default CoM height fallback (m)
-        -maxLeanDeg,
-        maxLeanDeg,
-        DEFAULT_SAMPLES,
-        setup.rearTruck.pivotAxisAngle,
-        setup.rearTruck.rake,
-        setup.wheelbase,
-      )
-      return { setup, curve }
-    })
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [setups, keyGeometryCurves, boardThicknessMm])
-
-  // ── Compute turning arc for the active setup ──────────────────────────────
-  const turningArc = useMemo(() => {
-    const activeCurveData = icrData.find(d => d.setup.id === activeSetupId)
-    if (!activeCurveData) return null
-    
-    // Find the point in the curve closest to steeringLeanAngleDeg
-    const point = activeCurveData.curve.reduce((prev, curr) => 
-      Math.abs(curr.leanAngleDeg - steeringLeanAngleDeg) < Math.abs(prev.leanAngleDeg - steeringLeanAngleDeg) ? curr : prev
-    )
-    
-    // If ICR is null or radius is too large, it's basically straight
-    const isStraight = point.turningCenterX === null || point.turningCenterZ === null || Math.abs(point.turningCenterZ) > 15000
-    
-    let icrX = 0
-    let icrZ = 0
-    let R = 0
-    
-    if (!isStraight) {
-      icrX = point.turningCenterX!
-      icrZ = point.turningCenterZ!
-      R = Math.abs(icrZ)
-    }
-    
-    // Valid X range for the circle: [icrX - R, icrX + R]
-    // Extend to cover the whole figure area vertically (clipping will handle the rest)
-    const minX = isStraight ? -0.2 * maxWheelbase : Math.max(-0.2 * maxWheelbase, icrX - R)
-    const maxX = isStraight ? 1.2 * maxWheelbase : Math.min(1.2 * maxWheelbase, icrX + R)
-    
-    if (minX >= maxX) return null
-    
-    const steps = 32
-    const pts: [number, number][] = []
-    for (let i = 0; i <= steps; i++) {
-      const X = minX + (maxX - minX) * (i / steps)
-      let dz = 0
-      if (!isStraight) {
-        const dx = X - icrX
-        // The circle equation: (X - icrX)^2 + (Z - icrZ)^2 = R^2
-        // We want the Z that is closer to 0 (the board mid-line)
-        dz = icrZ > 0 
-          ? icrZ - Math.sqrt(Math.max(0, R * R - dx * dx))
-          : icrZ + Math.sqrt(Math.max(0, R * R - dx * dx))
-      }
-      
-      pts.push(toSVG(X, dz))
-    }
-    
-    return {
-      points: toPolylinePoints(pts),
-      color: activeCurveData.setup.color,
-      radiusMm: isStraight ? null : R,
-    }
-  }, [icrData, activeSetupId, steeringLeanAngleDeg, maxWheelbase])
+  const [frontAxleX] = toSVG(0, refHalfBoardWidth)
+  const [rearAxleX] = toSVG(refSetup.wheelbase, refHalfBoardWidth)
 
   const windrose = useMemo(() => {
-    const activeCurveData = icrData.find(d => d.setup.id === activeSetupId)
+    const activeCurveData = keyGeometryCurves?.find(d => d.setupId === activeSetupId)
     if (!activeCurveData || activeCurveData.curve.length === 0) return null
 
     const point = activeCurveData.curve.reduce((prev, curr) =>
@@ -290,10 +151,61 @@ const TopView: React.FC<TopViewProps> = ({
     return {
       centerX,
       centerY,
-      color: activeCurveData.setup.color,
+      color: refSetup.color,
+      frontSteerAngleDeg: point.frontSteerAngleDeg,
+      rearSteerAngleDeg: point.rearSteerAngleDeg,
       samples: computePositivePropulsionWindrose(point.frontSteerAngleDeg, WINDROSE_SAMPLE_COUNT),
     }
-  }, [icrData, activeSetupId, steeringLeanAngleDeg, refSetup.wheelbase])
+  }, [keyGeometryCurves, activeSetupId, steeringLeanAngleDeg, refSetup.color, refSetup.wheelbase])
+
+  const axleLine = (axleX: number, steerAngleDeg: number, trackWidthMm: number): { x1: number; y1: number; x2: number; y2: number } => {
+    const steerRad = (steerAngleDeg * Math.PI) / 180
+    const halfTrackPx = (trackWidthMm / 2) * icrScale
+    return {
+      x1: axleX - halfTrackPx * Math.sin(steerRad),
+      y1: originY + halfTrackPx * Math.cos(steerRad),
+      x2: axleX + halfTrackPx * Math.sin(steerRad),
+      y2: originY - halfTrackPx * Math.cos(steerRad),
+    }
+  }
+
+  const frontAxleLine = axleLine(frontAxleX, windrose?.frontSteerAngleDeg ?? 0, refSetup.frontTruck.trackWidth)
+  // The rear truck is mounted backwards, so its visible axle rotation is reversed.
+  const rearAxleLine = axleLine(rearAxleX, -(windrose?.rearSteerAngleDeg ?? 0), refSetup.frontTruck.trackWidth)
+
+  const turningArc = useMemo(() => {
+    const activeCurveData = keyGeometryCurves?.find(d => d.setupId === activeSetupId)
+    if (!activeCurveData || activeCurveData.curve.length === 0) return null
+
+    const point = activeCurveData.curve.reduce((prev, curr) =>
+      Math.abs(curr.leanAngleDeg - steeringLeanAngleDeg) < Math.abs(prev.leanAngleDeg - steeringLeanAngleDeg) ? curr : prev,
+    )
+    const isStraight = point.turningCenterX === null || point.turningCenterZ === null || Math.abs(point.turningCenterZ) > 15000
+    const icrX = isStraight ? 0 : point.turningCenterX
+    const icrZ = isStraight ? 0 : point.turningCenterZ
+    const radius = isStraight ? 0 : Math.abs(icrZ!)
+    const minX = isStraight ? -0.1 * maxWheelbase : Math.max(-0.1 * maxWheelbase, icrX! - radius)
+    const maxX = isStraight ? 1.1 * maxWheelbase : Math.min(1.1 * maxWheelbase, icrX! + radius)
+    if (minX >= maxX) return null
+
+    const points: [number, number][] = []
+    for (let i = 0; i <= 32; i++) {
+      const x = minX + (maxX - minX) * (i / 32)
+      let z = 0
+      if (!isStraight) {
+        const dx = x - icrX!
+        const distance = Math.sqrt(Math.max(0, radius * radius - dx * dx))
+        z = icrZ! > 0 ? icrZ! - distance : icrZ! + distance
+      }
+      points.push(toSVG(x, z))
+    }
+
+    return {
+      points: toPolylinePoints(points),
+      color: refSetup.color,
+      radiusMm: isStraight ? null : radius,
+    }
+  }, [keyGeometryCurves, activeSetupId, steeringLeanAngleDeg, maxWheelbase, refSetup.color])
 
   return (
     <svg
@@ -301,7 +213,7 @@ const TopView: React.FC<TopViewProps> = ({
       height={height}
       viewBox={`0 0 ${width} ${height}`}
       className="block"
-      aria-label="Top view (XZ plane) with ICR locus"
+      aria-label="Top view (XZ plane) with positive propulsion windrose"
     >
       {/* Background */}
       <rect width={width} height={height} fill="#0f172a" rx={4} />
@@ -315,7 +227,7 @@ const TopView: React.FC<TopViewProps> = ({
 
       {/* Title */}
       <text x={8} y={18} fill={UI_TEXT_PRIMARY} fontSize={11} fontFamily="monospace">
-        Top View (XZ) — ICR Locus + Propulsion Windrose
+        Top View (XZ) — Propulsion Windrose + Turning Arc
       </text>
 
       {/* Board outline — drawn once for the reference setup, extended by 60mm on both sides */}
@@ -324,99 +236,35 @@ const TopView: React.FC<TopViewProps> = ({
         y={refBoardTop}
         width={refBoardWidthPx}
         height={refBoardHeightPx}
-        fill={refSetup.color}
-        fillOpacity={0.05}
-        stroke={refSetup.color}
+        fill="#334155"
+        fillOpacity={1}
+        stroke="#475569"
         strokeWidth={1.5}
-        strokeOpacity={0.4}
+        strokeOpacity={1}
         rx={3}
       />
       
       {/* Side lines at actual track width */}
       <line
-        x1={sideLineLeftX}
-        y1={sideLineTopY}
-        x2={sideLineRightX}
-        y2={sideLineTopY}
-        stroke="#ffffff"
-        strokeWidth={1.5}
-        strokeDasharray="4 4"
+        x1={frontAxleLine.x1}
+        y1={frontAxleLine.y1}
+        x2={frontAxleLine.x2}
+        y2={frontAxleLine.y2}
+        stroke="#475569"
+        strokeWidth={2.5}
+        opacity={0.9}
       />
       <line
-        x1={sideLineLeftX}
-        y1={sideLineBottomY}
-        x2={sideLineRightX}
-        y2={sideLineBottomY}
-        stroke="#ffffff"
-        strokeWidth={1.5}
-        strokeDasharray="4 4"
+        x1={rearAxleLine.x1}
+        y1={rearAxleLine.y1}
+        x2={rearAxleLine.x2}
+        y2={rearAxleLine.y2}
+        stroke="#475569"
+        strokeWidth={2.5}
+        opacity={0.9}
       />
 
-      {/* Render each setup — clipped to viewport */}
       <g clipPath="url(#topview-clip)">
-      {icrData.map(({ setup, curve }) => {
-        const isActive = setup.id === activeSetupId
-        const opacity = isActive || !activeSetupId ? 1 : 0.3
-        // const wb = setup.wheelbase
-        /*
-        const halfTrack = setup.frontTruck.trackWidth / 2
-        // Front axle endpoints
-        const [frontAxleX1, frontAxleY1] = toSVG(0, -halfTrack)
-        const [frontAxleX2, frontAxleY2] = toSVG(0, halfTrack)
-        // Rear axle endpoints
-        const [rearAxleX1, rearAxleY1] = toSVG(wb, -halfTrack)
-        const [rearAxleX2, rearAxleY2] = toSVG(wb, halfTrack)
-        */
-
-
-        // Split ICR locus into positive-Z and negative-Z branches
-        const { positive, negative } = splitByZSign(curve)
-
-        const toFilteredSVGPoints = (branch: KeyGeometryResult[]): [number, number][] =>
-          branch
-            .filter(r =>
-              Math.abs(r.turningCenterZ!) < icrClipMm &&
-              Math.abs(r.turningCenterX!) < icrClipMm * 2,
-            )
-            .map(r => toSVG(r.turningCenterX!, r.turningCenterZ!))
-
-        const posPoints = toFilteredSVGPoints(positive)
-        const negPoints = toFilteredSVGPoints(negative)
-
-        const strokeW = isActive ? 2 : 1
-
-        return (
-          <g key={setup.id} opacity={opacity}>
-
-
-            {/* ICR locus — positive-Z branch (heel lean) */}
-            {posPoints.length > 1 && (
-              <polyline
-                points={toPolylinePoints(posPoints)}
-                fill="none"
-                stroke={setup.color}
-                strokeWidth={strokeW}
-                opacity={0.85}
-                strokeLinejoin="round"
-              />
-            )}
-
-            {/* ICR locus — negative-Z branch (toe lean) */}
-            {negPoints.length > 1 && (
-              <polyline
-                points={toPolylinePoints(negPoints)}
-                fill="none"
-                stroke={setup.color}
-                strokeWidth={strokeW}
-                opacity={0.55}
-                strokeDasharray="5 3"
-                strokeLinejoin="round"
-              />
-            )}
-          </g>
-        )
-      })}
-
       {windrose && (
         <g aria-label="Positive propulsion ratio windrose">
           {windrose.samples.map(sample => (
@@ -432,8 +280,7 @@ const TopView: React.FC<TopViewProps> = ({
           ))}
         </g>
       )}
-      
-      {/* Turning arc for the active setup */}
+
       {turningArc && (
         <polyline
           points={turningArc.points}
@@ -445,10 +292,9 @@ const TopView: React.FC<TopViewProps> = ({
         />
       )}
 
-      {/* Turning radius display */}
       {turningArc?.radiusMm != null && turningArc.radiusMm < 99900 && (
         <text
-          x={originX}
+          x={originX + maxWheelbase * icrScale * 0.5}
           y={refBoardTop - 23}
           fill={UI_TEXT_MUTED}
           fontSize={13}
@@ -460,28 +306,25 @@ const TopView: React.FC<TopViewProps> = ({
       )}
       </g>
 
-      {/* Wheelbase dimension for reference setup — now rendered as a vertical annotation */}
+      {/* Wheelbase dimension for reference setup */}
       {(() => {
         const wb = refSetup.wheelbase
-        // Place annotation to the right of the board
+        // Place annotation below the board
         const offsetZmm = -200 - refSetup.frontTruck.trackWidth / 2
-        const [annotX, frontY] = toSVG(0,  offsetZmm)
-        const [,        rearY] = toSVG(wb, offsetZmm)
+        const [frontX, annotY] = toSVG(0, offsetZmm)
+        const [rearX] = toSVG(wb, offsetZmm)
         return (
           <g>
-            {/* vertical dimension line */}
-            <line x1={annotX} y1={frontY} x2={annotX} y2={rearY} stroke={UI_TEXT_MUTED} strokeWidth={1} />
-            {/* tick at front axle */}
-            <line x1={annotX - 4} y1={frontY} x2={annotX + 4} y2={frontY} stroke={UI_TEXT_MUTED} strokeWidth={1} />
-            {/* tick at rear axle */}
-            <line x1={annotX - 4} y1={rearY} x2={annotX + 4} y2={rearY} stroke={UI_TEXT_MUTED} strokeWidth={1} />
+            <line x1={frontX} y1={annotY} x2={rearX} y2={annotY} stroke={UI_TEXT_MUTED} strokeWidth={1} />
+            <line x1={frontX} y1={annotY - 4} x2={frontX} y2={annotY + 4} stroke={UI_TEXT_MUTED} strokeWidth={1} />
+            <line x1={rearX} y1={annotY - 4} x2={rearX} y2={annotY + 4} stroke={UI_TEXT_MUTED} strokeWidth={1} />
             <text
-              x={annotX - 20}
-              y={(frontY + rearY) / 2 + 4}
+              x={(frontX + rearX) / 2}
+              y={annotY + 14}
               fill={UI_TEXT_MUTED}
               fontSize={9}
               fontFamily="monospace"
-              textAnchor="end"
+              textAnchor="middle"
             >
               L={wb}mm
             </text>
@@ -491,8 +334,8 @@ const TopView: React.FC<TopViewProps> = ({
 
       {/* Axis labels */}
       <text
-        x={originX + 4}
-        y={originY - 4}
+        x={originX - 4}
+        y={originY + 14}
         fill={UI_TEXT_SECONDARY}
         fontSize={10}
         fontFamily="monospace"
@@ -501,8 +344,8 @@ const TopView: React.FC<TopViewProps> = ({
         front
       </text>
       <text
-        x={originX + 4}
-        y={originY + maxWheelbase * icrScale + 14}
+        x={originX + maxWheelbase * icrScale + 4}
+        y={originY + 14}
         fill={UI_TEXT_SECONDARY}
         fontSize={10}
         fontFamily="monospace"
@@ -511,10 +354,6 @@ const TopView: React.FC<TopViewProps> = ({
         rear
       </text>
 
-      {/* Legend */}
-      <text x={8} y={height - 8} fill={UI_TEXT_SECONDARY} fontSize={9} fontFamily="monospace">
-        ICR locus — solid: Z≥0 (heel lean) · dashed: Z&lt;0 (toe lean)
-      </text>
     </svg>
   )
 }

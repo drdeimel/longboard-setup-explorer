@@ -2,7 +2,9 @@
 
 ## Decisions
 
-- Add the visualization to `TopView`, which already owns the top-down XZ SVG and the currently selected lean angle.
+- Add the visualization to `TopView`, which owns the top-down XZ SVG and the currently selected lean angle.
+- Rotate the top view 90 degrees counterclockwise so board-forward runs horizontally.
+- Remove ICR locus lines and ICR legend from this view, but retain the active-lean turning arc and turning-radius label.
 - Use the active setup only, matching the existing turning-arc behavior; non-active setup overlays remain unchanged.
 - Use the **front truck** wheel travel direction.
 - Applied-force angle is measured from the board's forward X direction, with positive angle toward +Z/right on the top view.

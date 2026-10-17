@@ -17,6 +17,7 @@ UI and presentation domain.
 - `LeanVsLateralForceChart` visualizes `lateralForceEquilibriumN` from the pre-computed key geometry curves: the lateral force at which bushing torque and steering moment balance at each lean angle.
 - `TopView` overlays a transparent 700 mm positive-only propulsion windrose for the active lean angle, using centralized front-wheel direction data and 32-direction sampling.
 - `TopView` highlights the applied-force leaves at +/-90 degrees to board-forward with brighter blue and higher opacity while preserving their ratio-derived lengths.
+- `TopView` retains the active-lean turning arc and turning-radius label while omitting the full ICR locus lines.
 - The `ConfigPanel` enforces setup lifecycle rules: at least one setup must exist, deletion is disabled at 1 setup, and duplication creates a deep copy with a new auto-generated name and color.
 - `TourOverlay` renders the guided tour UI with backdrop, highlight, and tooltip. Transition timing between tour stops is controlled via CSS transitions.
 - `TourSelector` provides the UI for selecting and starting available tours.
