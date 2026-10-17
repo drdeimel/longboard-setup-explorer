@@ -11,6 +11,8 @@ UI and presentation domain.
 - `FrontView` visualizes steering motion by projecting axle and wheel widths using the centralized `computeLeanToSteer` function (using `cos` for Z-axis projection). Wheel sides are rendered as ellipses whose minor axis scales with `sin(steering angle)` to dynamically show wheel profile thickness during steering.
 - `SideView` receives the active lean angle and uses centralized `computeSideViewMotion` plus `computeWheelRimZPositions` output to render left outer, left inner, right inner, and right outer rims. At zero steer they overlap in side projection; steering separates left/right rims with opposite fore/aft motion.
 - The axle line in `SideView` is the orthographic XY projection of the steered axle, using centralized `computeWheelAxleZPositions`; do not replace it with a fixed decorative line.
+- Side-view wheel outlines are painted back-to-front with the right wheel first and left wheel last; rim faces use the SVG background fill to occlude the farther wheel.
+- Side-view trail motion uses `computeTrailOffsetX` to translate the wheel set and truck axle. The pivot-axis drawing remains fixed in its zero-steer reference placement. The current test variant uses `cos(steerAngle) * totalHeight` as the motion arm.
 - Charts must use `react-plotly.js` and overlay all active setups with consistent color coding.
 - `LeanVsLateralForceChart` visualizes `lateralForceEquilibriumN` from the pre-computed key geometry curves: the lateral force at which bushing torque and steering moment balance at each lean angle.
 - The `ConfigPanel` enforces setup lifecycle rules: at least one setup must exist, deletion is disabled at 1 setup, and duplication creates a deep copy with a new auto-generated name and color.

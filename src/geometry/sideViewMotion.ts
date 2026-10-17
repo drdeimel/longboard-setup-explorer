@@ -13,12 +13,34 @@ export interface SideViewMotion {
   steerAngleDeg: number
   hangerRotationDeg: number
   axleOffsetX: number
+  trailOffsetX: number
+}
+
+/** Fore/aft trail displacement caused by steering. */
+export function computeTrailOffsetX(
+  steerAngleDeg: number,
+  totalHeight: number,
+): number {
+  const steerRad = (steerAngleDeg * Math.PI) / 180
+  const testMotionArm = Math.cos(steerRad) * totalHeight
+  return testMotionArm * (1 - Math.cos(steerRad))
+}
+
+/** Project a wheel rim's Z position into the side-view physical X coordinate. */
+export function projectWheelRimToSideX(
+  axleOffsetX: number,
+  steerAngleDeg: number,
+  rimZ: number,
+): number {
+  const steerRad = (steerAngleDeg * Math.PI) / 180
+  return axleOffsetX + Math.sin(steerRad) * rimZ
 }
 
 export function computeSideViewMotion(
   pivotAxisAngleDeg: number,
   rake: number,
   leanAngleDeg: number,
+  totalHeight = 0,
 ): SideViewMotion {
   const { direction, point } = computePivotAxis(pivotAxisAngleDeg, rake)
   const steer = computeLeanToSteer(direction, leanAngleDeg)
@@ -35,5 +57,10 @@ export function computeSideViewMotion(
     steerAngleDeg: steer.steerAngleDeg,
     hangerRotationDeg: steer.hangerRotationDeg,
     axleOffsetX: point[0] + rotatedRelativeAxle[0],
+    trailOffsetX: computeTrailOffsetX(
+      steer.steerAngleDeg,
+      // TEST: replace trail with cos(steer) * total height.
+      totalHeight,
+    ),
   }
 }

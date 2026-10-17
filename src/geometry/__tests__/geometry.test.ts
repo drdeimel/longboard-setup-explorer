@@ -14,7 +14,7 @@
 import { describe, it, expect } from 'vitest'
 import { computePivotAxis, boardSurfaceHeight } from '../pivotAxis'
 import { computeLeanToSteer, leanToSteerCurve } from '../leanToSteer'
-import { computeSideViewMotion } from '../sideViewMotion'
+import { computeSideViewMotion, computeTrailOffsetX, projectWheelRimToSideX } from '../sideViewMotion'
 import { computeWheelAxleZPositions, computeWheelRimZPositions } from '../wheelRimPositions'
 import { computeRotationAxisDist } from '../rotationAxisDist'
 import { computeICR } from '../turningCenter'
@@ -253,6 +253,28 @@ describe('computeSideViewMotion', () => {
     const negative = computeSideViewMotion(50, 10, -20)
     expect(Math.abs(positive.axleOffsetX)).toBeGreaterThan(0)
     expect(approx(positive.axleOffsetX, negative.axleOffsetX, 1e-8)).toBe(true)
+  })
+})
+
+describe('projectWheelRimToSideX', () => {
+  it('moves the left wheel backward and right wheel forward for positive steer', () => {
+    const leftX = projectWheelRimToSideX(0, 20, -100)
+    const rightX = projectWheelRimToSideX(0, 20, 100)
+    expect(leftX).toBeLessThan(0)
+    expect(rightX).toBeGreaterThan(0)
+  })
+})
+
+describe('computeTrailOffsetX', () => {
+  it('uses geometric trail and cosine steering motion', () => {
+    const result = computeTrailOffsetX(20, 100)
+    const steerRad = (20 * Math.PI) / 180
+    const expected = Math.cos(steerRad) * 100 * (1 - Math.cos(steerRad))
+    expect(approx(result, expected)).toBe(true)
+  })
+
+  it('is zero for zero steering', () => {
+    expect(approx(computeTrailOffsetX(0, 100), 0)).toBe(true)
   })
 })
 

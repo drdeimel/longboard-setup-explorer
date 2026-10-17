@@ -22,7 +22,7 @@ import React from 'react'
 import type { TruckConfig } from '../models/TruckConfig'
 import { computePivotAxis, boardSurfaceHeight } from '../geometry/pivotAxis'
 import { computeTruckGeometry } from '../geometry/truckGeometry'
-import { computeSideViewMotion } from '../geometry/sideViewMotion'
+import { computeSideViewMotion, projectWheelRimToSideX } from '../geometry/sideViewMotion'
 import { computeWheelAxleZPositions, computeWheelRimZPositions } from '../geometry/wheelRimPositions'
 import { DISPLAY_GEOMETRY_WIDTH_MM, DISPLAY_WHEEL_OFFSET_MM, DISPLAY_WHEEL_WIDTH_MM } from '../physics/keyGeometryDataSet'
 import { UI_TEXT_MUTED, UI_TEXT_PRIMARY } from '../theme/uiColors'
@@ -89,6 +89,7 @@ const SideView: React.FC<SideViewProps> = ({
     truck.pivotAxisAngle,
     truck.rake,
     leanAngleDeg,
+    dBoardToGround,
   )
 
   // Determine scale: fit the geometry into the SVG with some padding
@@ -158,7 +159,7 @@ const SideView: React.FC<SideViewProps> = ({
   const ayPos = axisPoint[1] + axisDirY * tPos
   const axNeg = axisPoint[0] + axisDir[0] * tNeg
   const ayNeg = axisPoint[1] + axisDirY * tNeg
-  
+
   const [svgAxPos, svgAyPos] = toSVG(axPos, ayPos)
   const [svgAxNeg, svgAyNeg] = toSVG(axNeg, ayNeg)
 
@@ -168,11 +169,18 @@ const SideView: React.FC<SideViewProps> = ({
     DISPLAY_WHEEL_WIDTH_MM,
   )
   const steerRad = (sideMotion.steerAngleDeg * Math.PI) / 180
-  const wheelRimX = (z: number): number => sideMotion.axleOffsetX - Math.sin(steerRad) * z
-  const leftOuterX = wheelRimX(rimZ.leftOuterZ)
-  const leftInnerX = wheelRimX(rimZ.leftInnerZ)
-  const rightInnerX = wheelRimX(rimZ.rightInnerZ)
-  const rightOuterX = wheelRimX(rimZ.rightOuterZ)
+  const wheelRimX = (z: number): number => projectWheelRimToSideX(
+    sideMotion.trailOffsetX,
+    sideMotion.steerAngleDeg,
+    z,
+  )
+  // The side projection reverses the visible rim order within each wheel.
+  // Keep the semantic rim names, but assign their projected X positions in
+  // the opposite order so the wheel faces rotate in the correct direction.
+  const leftOuterX = wheelRimX(rimZ.leftInnerZ)
+  const leftInnerX = wheelRimX(rimZ.leftOuterZ)
+  const rightInnerX = wheelRimX(rimZ.rightOuterZ)
+  const rightOuterX = wheelRimX(rimZ.rightInnerZ)
   const axleZ = computeWheelAxleZPositions(truck.trackWidth)
   const [leftAxleX, axleY] = toSVG(wheelRimX(axleZ.leftZ), 0)
   const [rightAxleX] = toSVG(wheelRimX(axleZ.rightZ), 0)
@@ -266,25 +274,34 @@ const SideView: React.FC<SideViewProps> = ({
         ground
       </text>
 
-      {/* Four wheel rims: left/right outer and inner rims. */}
+      {/* Wheel outlines are painted back-to-front: right wheel first, left wheel last. */}
       <g stroke="#475569" strokeWidth={1.5} fill="none">
-        <line x1={leftOuterWheelX} y1={wheelCy - wheelR} x2={leftInnerWheelX} y2={wheelCy - wheelR} />
-        <line x1={leftOuterWheelX} y1={wheelCy + wheelR} x2={leftInnerWheelX} y2={wheelCy + wheelR} />
         <line x1={rightInnerWheelX} y1={wheelCy - wheelR} x2={rightOuterWheelX} y2={wheelCy - wheelR} />
         <line x1={rightInnerWheelX} y1={wheelCy + wheelR} x2={rightOuterWheelX} y2={wheelCy + wheelR} />
         {Math.abs(sideMotion.steerAngleDeg) < 0.5 ? (
           <>
-            <circle cx={leftOuterWheelX} cy={wheelCy} r={wheelR} />
-            <circle cx={leftInnerWheelX} cy={wheelCy} r={wheelR} />
-            <circle cx={rightInnerWheelX} cy={wheelCy} r={wheelR} />
-            <circle cx={rightOuterWheelX} cy={wheelCy} r={wheelR} />
+            <circle cx={rightInnerWheelX} cy={wheelCy} r={wheelR} fill="#0f172a" />
+            <circle cx={rightOuterWheelX} cy={wheelCy} r={wheelR} fill="#0f172a" />
           </>
         ) : (
           <>
-            <ellipse cx={leftOuterWheelX} cy={wheelCy} rx={wheelEllipseRx} ry={wheelEllipseRy} />
-            <ellipse cx={leftInnerWheelX} cy={wheelCy} rx={wheelEllipseRx} ry={wheelEllipseRy} />
-            <ellipse cx={rightInnerWheelX} cy={wheelCy} rx={wheelEllipseRx} ry={wheelEllipseRy} />
-            <ellipse cx={rightOuterWheelX} cy={wheelCy} rx={wheelEllipseRx} ry={wheelEllipseRy} />
+            <ellipse cx={rightInnerWheelX} cy={wheelCy} rx={wheelEllipseRx} ry={wheelEllipseRy} fill="#0f172a" />
+            <ellipse cx={rightOuterWheelX} cy={wheelCy} rx={wheelEllipseRx} ry={wheelEllipseRy} fill="#0f172a" />
+          </>
+        )}
+      </g>
+      <g stroke="#475569" strokeWidth={1.5} fill="none">
+        <line x1={leftOuterWheelX} y1={wheelCy - wheelR} x2={leftInnerWheelX} y2={wheelCy - wheelR} />
+        <line x1={leftOuterWheelX} y1={wheelCy + wheelR} x2={leftInnerWheelX} y2={wheelCy + wheelR} />
+        {Math.abs(sideMotion.steerAngleDeg) < 0.5 ? (
+          <>
+            <circle cx={leftOuterWheelX} cy={wheelCy} r={wheelR} fill="#0f172a" />
+            <circle cx={leftInnerWheelX} cy={wheelCy} r={wheelR} fill="#0f172a" />
+          </>
+        ) : (
+          <>
+            <ellipse cx={leftOuterWheelX} cy={wheelCy} rx={wheelEllipseRx} ry={wheelEllipseRy} fill="#0f172a" />
+            <ellipse cx={leftInnerWheelX} cy={wheelCy} rx={wheelEllipseRx} ry={wheelEllipseRy} fill="#0f172a" />
           </>
         )}
       </g>
