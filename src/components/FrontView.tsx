@@ -199,7 +199,7 @@ const FrontView: React.FC<FrontViewProps> = ({
   const wheelEllipseRy = wheelHeight / 2
 
   const rimZ = computeWheelRimZPositions(
-    truck.trackWidth,
+    truck.trackWidth - 2 * DISPLAY_WHEEL_OFFSET_MM,
     DISPLAY_WHEEL_OFFSET_MM,
     DISPLAY_WHEEL_WIDTH_MM,
   )

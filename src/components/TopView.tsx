@@ -16,7 +16,9 @@
 import React, { useMemo } from 'react'
 import type { BoardSetupConfig } from '../models/BoardSetupConfig'
 import { computePositivePropulsionWindrose, type PropulsionWindroseSample } from '../geometry/propulsionWindrose'
+import { computeWheelRimZPositions } from '../geometry/wheelRimPositions'
 import type { KeyGeometryResult } from '../physics/keyGeometryDataSet'
+import { DISPLAY_WHEEL_OFFSET_MM, DISPLAY_WHEEL_WIDTH_MM } from '../physics/keyGeometryDataSet'
 import { UI_TEXT_MUTED, UI_TEXT_PRIMARY, UI_TEXT_SECONDARY } from '../theme/uiColors'
 
 /** Props for the TopView component. */
@@ -54,7 +56,7 @@ const DEFAULT_HEIGHT = 220
 const TOP_VIEW_SCALE = 0.48 // pixels per mm; 3x zoom
 const WINDROSE_DIAMETER_MM = 700
 const WINDROSE_SAMPLE_COUNT = 32
-const WINDROSE_CENTER_FRACTION_OF_WHEELBASE = 0.15
+const CENTER_OF_MOMENT_EPSILON = 1e-9
 
 function windroseWedgePath(
   centerX: number,
@@ -68,7 +70,7 @@ function windroseWedgePath(
   const angleRad = (sample.appliedAngleDeg * Math.PI) / 180 + Math.PI
   const point = (angle: number): [number, number] => [
     centerX + radius * Math.cos(angle),
-    centerY - radius * Math.sin(angle),
+    centerY + radius * Math.sin(angle),
   ]
   const [x1, y1] = point(angleRad - halfWidthRad)
   const [x2, y2] = point(angleRad + halfWidthRad)
@@ -77,6 +79,34 @@ function windroseWedgePath(
 
 function toPolylinePoints(points: [number, number][]): string {
   return points.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ')
+}
+
+function wheelRectanglePoints(
+  axleX: number,
+  centerZ: number,
+  steerAngleDeg: number,
+  wheelDiameterMm: number,
+  toSVG: (x: number, z: number) => [number, number],
+): string {
+  const steerRad = (steerAngleDeg * Math.PI) / 180
+  const rolling = [Math.cos(steerRad), -Math.sin(steerRad)]
+  const axle = [Math.sin(steerRad), Math.cos(steerRad)]
+  const wheelCenterX = axleX + axle[0] * centerZ
+  const wheelCenterZ = axle[1] * centerZ
+  const halfLength = wheelDiameterMm / 2
+  const halfWidth = DISPLAY_WHEEL_WIDTH_MM / 2
+  const corners = [
+    [wheelCenterX + rolling[0] * halfLength + axle[0] * halfWidth, wheelCenterZ + rolling[1] * halfLength + axle[1] * halfWidth],
+    [wheelCenterX - rolling[0] * halfLength + axle[0] * halfWidth, wheelCenterZ - rolling[1] * halfLength + axle[1] * halfWidth],
+    [wheelCenterX - rolling[0] * halfLength - axle[0] * halfWidth, wheelCenterZ - rolling[1] * halfLength - axle[1] * halfWidth],
+    [wheelCenterX + rolling[0] * halfLength - axle[0] * halfWidth, wheelCenterZ + rolling[1] * halfLength - axle[1] * halfWidth],
+  ]
+  return corners
+    .map(([x, z]) => {
+      const [svgX, svgY] = toSVG(x, z)
+      return `${svgX.toFixed(1)},${svgY.toFixed(1)}`
+    })
+    .join(' ')
 }
 
 /**
@@ -113,16 +143,16 @@ const TopView: React.FC<TopViewProps> = ({
   const icrScale = TOP_VIEW_SCALE
 
   // SVG origin: centre of the wheelbase after a 90° CCW rotation.
-  const originX = width / 2 - maxWheelbase * icrScale * 0.5
+  const originX = width / 2 - refSetup.wheelbase * icrScale * 0.5
   const originY = height / 2
 
   /** Convert physics (X, Z) to SVG pixel coordinates (90° CCW rotated view).
    *  physX (forward) → horizontal: front at left, rear at right.
-   *  physZ (lateral) → vertical: heel side (+Z) goes upward.
+   *  physZ (lateral) → vertical: heel side (+Z) goes downward.
    */
   const toSVG = (physX: number, physZ: number): [number, number] => [
     originX + physX * icrScale,
-    originY - physZ * icrScale,
+    originY + physZ * icrScale,
   ]
 
   // Precompute board outline dimensions for the reference setup (drawn once)
@@ -133,45 +163,92 @@ const TopView: React.FC<TopViewProps> = ({
   
   const refBoardWidthPx = refSetup.wheelbase * icrScale + 2 * 0.1 * refSetup.wheelbase * icrScale
   const refBoardHeightPx = (boardWidthMm + 2 * boardExtensionMm) * icrScale
-  const [refBoardLeft, refBoardTop] = toSVG(-0.1 * refSetup.wheelbase, extendedHalfBoardWidth)
+  const [refBoardLeft, refBoardTop] = toSVG(-0.1 * refSetup.wheelbase, -extendedHalfBoardWidth)
 
   // Precompute side line positions (at actual track width)
   const [frontAxleX] = toSVG(0, refHalfBoardWidth)
   const [rearAxleX] = toSVG(refSetup.wheelbase, refHalfBoardWidth)
 
-  const windrose = useMemo(() => {
+  const windroses = useMemo(() => {
     const activeCurveData = keyGeometryCurves?.find(d => d.setupId === activeSetupId)
-    if (!activeCurveData || activeCurveData.curve.length === 0) return null
+    if (!activeCurveData || activeCurveData.curve.length === 0) return []
 
     const point = activeCurveData.curve.reduce((prev, curr) =>
       Math.abs(curr.leanAngleDeg - steeringLeanAngleDeg) < Math.abs(prev.leanAngleDeg - steeringLeanAngleDeg) ? curr : prev,
     )
-    const [centerX, centerY] = toSVG(refSetup.wheelbase * WINDROSE_CENTER_FRACTION_OF_WHEELBASE, 0)
-
-    return {
-      centerX,
-      centerY,
-      color: refSetup.color,
-      frontSteerAngleDeg: point.frontSteerAngleDeg,
-      rearSteerAngleDeg: point.rearSteerAngleDeg,
-      samples: computePositivePropulsionWindrose(point.frontSteerAngleDeg, WINDROSE_SAMPLE_COUNT),
-    }
+    return [
+      {
+        id: 'front',
+        center: toSVG(0, 0),
+        color: refSetup.color,
+        steerAngleDeg: point.frontSteerAngleDeg,
+      },
+      {
+        id: 'rear',
+        center: toSVG(refSetup.wheelbase, 0),
+        color: refSetup.color,
+        // The rear truck is mounted backwards.
+        steerAngleDeg: -point.rearSteerAngleDeg,
+      },
+    ].map(windrose => {
+      const samples = computePositivePropulsionWindrose(windrose.steerAngleDeg, WINDROSE_SAMPLE_COUNT)
+      return {
+        ...windrose,
+        samples,
+        perpendicularRatios: {
+          90: samples.find(sample => sample.appliedAngleDeg === 90)?.ratio ?? 0,
+          270: samples.find(sample => sample.appliedAngleDeg === 270)?.ratio ?? 0,
+        },
+      }
+    })
   }, [keyGeometryCurves, activeSetupId, steeringLeanAngleDeg, refSetup.color, refSetup.wheelbase])
+
+  const centerOfMoment = useMemo(() => {
+    const front = windroses.find(windrose => windrose.id === 'front')
+    const rear = windroses.find(windrose => windrose.id === 'rear')
+    if (!front || !rear) return null
+
+    const frontAngle = front.perpendicularRatios[90] >= front.perpendicularRatios[270] ? 90 : 270
+    const rearAngle = frontAngle === 90 ? 270 : 90
+    const frontRatio = front.perpendicularRatios[frontAngle]
+    const rearRatio = rear.perpendicularRatios[rearAngle]
+    if (rearRatio <= 0) return null
+
+    const distanceFromFrontMm = (rearRatio / (rearRatio + frontRatio + CENTER_OF_MOMENT_EPSILON)) * refSetup.wheelbase
+    return toSVG(distanceFromFrontMm, 0)
+  }, [windroses, refSetup.wheelbase])
 
   const axleLine = (axleX: number, steerAngleDeg: number, trackWidthMm: number): { x1: number; y1: number; x2: number; y2: number } => {
     const steerRad = (steerAngleDeg * Math.PI) / 180
     const halfTrackPx = (trackWidthMm / 2) * icrScale
     return {
       x1: axleX - halfTrackPx * Math.sin(steerRad),
-      y1: originY + halfTrackPx * Math.cos(steerRad),
+      y1: originY - halfTrackPx * Math.cos(steerRad),
       x2: axleX + halfTrackPx * Math.sin(steerRad),
-      y2: originY - halfTrackPx * Math.cos(steerRad),
+      y2: originY + halfTrackPx * Math.cos(steerRad),
     }
   }
 
-  const frontAxleLine = axleLine(frontAxleX, windrose?.frontSteerAngleDeg ?? 0, refSetup.frontTruck.trackWidth)
+  const wheelOffsetMm = refSetup.frontTruck.wheelOffset ?? DISPLAY_WHEEL_OFFSET_MM
+  const axleSpanMm = refSetup.frontTruck.trackWidth + 2 * wheelOffsetMm
+  const frontAxleLine = axleLine(frontAxleX, windroses[0]?.steerAngleDeg ?? 0, axleSpanMm)
   // The rear truck is mounted backwards, so its visible axle rotation is reversed.
-  const rearAxleLine = axleLine(rearAxleX, -(windrose?.rearSteerAngleDeg ?? 0), refSetup.frontTruck.trackWidth)
+  const rearAxleLine = axleLine(rearAxleX, windroses[1]?.steerAngleDeg ?? 0, axleSpanMm)
+
+  const frontWheelRims = computeWheelRimZPositions(
+    refSetup.frontTruck.trackWidth,
+    wheelOffsetMm,
+    DISPLAY_WHEEL_WIDTH_MM,
+  )
+  const rearWheelRims = computeWheelRimZPositions(
+    refSetup.frontTruck.trackWidth,
+    wheelOffsetMm,
+    DISPLAY_WHEEL_WIDTH_MM,
+  )
+  const frontLeftWheelZ = (frontWheelRims.leftOuterZ + frontWheelRims.leftInnerZ) / 2
+  const frontRightWheelZ = (frontWheelRims.rightInnerZ + frontWheelRims.rightOuterZ) / 2
+  const rearLeftWheelZ = (rearWheelRims.leftOuterZ + rearWheelRims.leftInnerZ) / 2
+  const rearRightWheelZ = (rearWheelRims.rightInnerZ + rearWheelRims.rightOuterZ) / 2
 
   const turningArc = useMemo(() => {
     const activeCurveData = keyGeometryCurves?.find(d => d.setupId === activeSetupId)
@@ -204,6 +281,7 @@ const TopView: React.FC<TopViewProps> = ({
       points: toPolylinePoints(points),
       color: refSetup.color,
       radiusMm: isStraight ? null : radius,
+      icrPoint: isStraight ? null : toSVG(icrX!, icrZ!),
     }
   }, [keyGeometryCurves, activeSetupId, steeringLeanAngleDeg, maxWheelbase, refSetup.color])
 
@@ -243,6 +321,13 @@ const TopView: React.FC<TopViewProps> = ({
         strokeOpacity={1}
         rx={3}
       />
+
+      <g fill="#475569" fillOpacity={0.9} stroke="#64748b" strokeWidth={1}>
+        <polygon points={wheelRectanglePoints(0, frontLeftWheelZ, windroses[0]?.steerAngleDeg ?? 0, refSetup.frontTruck.wheelDiameter, toSVG)} />
+        <polygon points={wheelRectanglePoints(0, frontRightWheelZ, windroses[0]?.steerAngleDeg ?? 0, refSetup.frontTruck.wheelDiameter, toSVG)} />
+        <polygon points={wheelRectanglePoints(refSetup.wheelbase, rearLeftWheelZ, windroses[1]?.steerAngleDeg ?? 0, refSetup.frontTruck.wheelDiameter, toSVG)} />
+        <polygon points={wheelRectanglePoints(refSetup.wheelbase, rearRightWheelZ, windroses[1]?.steerAngleDeg ?? 0, refSetup.frontTruck.wheelDiameter, toSVG)} />
+      </g>
       
       {/* Side lines at actual track width */}
       <line
@@ -265,20 +350,35 @@ const TopView: React.FC<TopViewProps> = ({
       />
 
       <g clipPath="url(#topview-clip)">
-      {windrose && (
-        <g aria-label="Positive propulsion ratio windrose">
-          {windrose.samples.map(sample => (
-            <path
-              key={sample.appliedAngleDeg}
-              d={windroseWedgePath(windrose.centerX, windrose.centerY, sample, icrScale)}
-              fill={sample.appliedAngleDeg === 90 || sample.appliedAngleDeg === 270 ? '#7dd3fc' : windrose.color}
-              fillOpacity={sample.appliedAngleDeg === 90 || sample.appliedAngleDeg === 270 ? 0.65 : 0.3}
-              stroke={sample.appliedAngleDeg === 90 || sample.appliedAngleDeg === 270 ? '#7dd3fc' : windrose.color}
-              strokeOpacity={sample.appliedAngleDeg === 90 || sample.appliedAngleDeg === 270 ? 0.75 : 0.45}
-              strokeWidth={0.5}
-            />
-          ))}
+      {windroses.map(windrose => (
+        <g key={windrose.id} aria-label={`${windrose.id} positive propulsion ratio windrose`}>
+          {windrose.samples.map(sample => {
+            const isPerpendicular = sample.appliedAngleDeg === 90 || sample.appliedAngleDeg === 270
+            return (
+              <path
+                key={sample.appliedAngleDeg}
+                d={windroseWedgePath(windrose.center[0], windrose.center[1], sample, icrScale)}
+                fill={isPerpendicular ? '#7dd3fc' : windrose.color}
+                fillOpacity={isPerpendicular ? 0.65 : 0.3}
+                stroke={isPerpendicular ? '#7dd3fc' : windrose.color}
+                strokeOpacity={isPerpendicular ? 0.75 : 0.45}
+                strokeWidth={0.5}
+              />
+            )
+          })}
         </g>
+      ))}
+
+      {centerOfMoment && (
+        <circle
+          cx={centerOfMoment[0]}
+          cy={centerOfMoment[1]}
+          r={4}
+          fill="#ffffff"
+          stroke="#0f172a"
+          strokeWidth={1}
+          aria-label="Center of moment"
+        />
       )}
 
       {turningArc && (
@@ -292,14 +392,26 @@ const TopView: React.FC<TopViewProps> = ({
         />
       )}
 
+      {turningArc?.icrPoint && (
+        <circle
+          cx={turningArc.icrPoint[0]}
+          cy={turningArc.icrPoint[1]}
+          r={4}
+          fill="#3b82f6"
+          stroke="#ffffff"
+          strokeWidth={1}
+          aria-label="Instantaneous center of rotation"
+        />
+      )}
+
       {turningArc?.radiusMm != null && turningArc.radiusMm < 99900 && (
         <text
-          x={originX + maxWheelbase * icrScale * 0.5}
-          y={refBoardTop - 23}
+          x={width - 8}
+          y={height - 8}
           fill={UI_TEXT_MUTED}
           fontSize={13}
           fontFamily="monospace"
-          textAnchor="middle"
+          textAnchor="end"
         >
           Turning radius: {(turningArc.radiusMm / 1000).toFixed(1)}m
         </text>

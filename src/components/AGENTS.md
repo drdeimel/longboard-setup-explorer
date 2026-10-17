@@ -15,9 +15,12 @@ UI and presentation domain.
 - Side-view trail motion uses `computeTrailOffsetX` to translate the wheel set and truck axle. The pivot-axis drawing remains fixed in its zero-steer reference placement. The current test variant uses `cos(steerAngle) * totalHeight` as the motion arm.
 - Charts must use `react-plotly.js` and overlay all active setups with consistent color coding.
 - `LeanVsLateralForceChart` visualizes `lateralForceEquilibriumN` from the pre-computed key geometry curves: the lateral force at which bushing torque and steering moment balance at each lean angle.
-- `TopView` overlays a transparent 700 mm positive-only propulsion windrose for the active lean angle, using centralized front-wheel direction data and 32-direction sampling.
+- `TopView` overlays matching transparent 700 mm positive-only propulsion windroses at the front and rear axle centers for the active lean angle, using centralized steering data and 32-direction sampling.
 - `TopView` highlights the applied-force leaves at +/-90 degrees to board-forward with brighter blue and higher opacity while preserving their ratio-derived lengths.
 - `TopView` retains the active-lean turning arc and turning-radius label while omitting the full ICR locus lines.
+- `TopView` marks the current lean's finite ICR position with a blue point projected from the centralized turning-center result.
+- `TopView` renders four grey rotated wheel rectangles using shared wheel-rim positions, wheel diameter, wheel width, track width, and wheel offset.
+- `TopView` marks the center of moment with a white point computed as `rearRatio / (rearRatio + frontRatio + epsilon) * wheelbase`, using the larger front perpendicular leaf and the rear leaf at the opposite perpendicular angle.
 - The `ConfigPanel` enforces setup lifecycle rules: at least one setup must exist, deletion is disabled at 1 setup, and duplication creates a deep copy with a new auto-generated name and color.
 - `TourOverlay` renders the guided tour UI with backdrop, highlight, and tooltip. Transition timing between tour stops is controlled via CSS transitions.
 - `TourSelector` provides the UI for selecting and starting available tours.

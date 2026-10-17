@@ -164,7 +164,7 @@ const SideView: React.FC<SideViewProps> = ({
   const [svgAxNeg, svgAyNeg] = toSVG(axNeg, ayNeg)
 
   const rimZ = computeWheelRimZPositions(
-    truck.trackWidth,
+    truck.trackWidth - 2 * DISPLAY_WHEEL_OFFSET_MM,
     DISPLAY_WHEEL_OFFSET_MM,
     DISPLAY_WHEEL_WIDTH_MM,
   )

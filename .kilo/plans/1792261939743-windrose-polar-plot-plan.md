@@ -2,7 +2,7 @@
 
 ## Decisions
 
-- Add the visualization to `TopView`, which owns the top-down XZ SVG and the currently selected lean angle.
+- Add matching front and rear visualizations to `TopView`, which owns the top-down XZ SVG and the currently selected lean angle.
 - Rotate the top view 90 degrees counterclockwise so board-forward runs horizontally.
 - Remove ICR locus lines and ICR legend from this view, but retain the active-lean turning arc and turning-radius label.
 - Use the active setup only, matching the existing turning-arc behavior; non-active setup overlays remain unchanged.
@@ -14,6 +14,8 @@
 - Target leaf span is approximately 700 mm in board coordinates, rendered with the same `icrScale` as the board. Keep the overlay transparent so the board and ICR remain visible.
 - Place the center slightly behind the front axle, initially around 15% of wheelbase behind it (with the exact visual offset decided during mockup review). This represents the front-foot region without inventing a rider-foot model.
 - Highlight the two applied-force sample directions perpendicular to board-forward with brighter blue and higher opacity, without changing their ratio-derived lengths.
+- Compute the center of moment as `rearRatio / (rearRatio + frontRatio + epsilon) * wheelbase`, using the larger front perpendicular leaf and the rear leaf at the opposite perpendicular angle; render it as a white point on the board centerline.
+- Render the finite current-lean ICR position from `turningCenterX/Z` as a blue point; omit it when the ICR is at infinity.
 
 ## Data and Geometry
 
