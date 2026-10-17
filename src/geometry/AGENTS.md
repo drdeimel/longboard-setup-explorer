@@ -10,6 +10,7 @@ Geometry engine domain.
 - This directory is the **SINGLE SOURCE OF TRUTH** for all derived, lean-independent truck geometry parameters.
 - View components (`src/components/`) MUST NOT perform their own mechanical or geometric calculations. They must consume outputs from this directory.
 - Any changes to geometry formulas MUST be made here and validated by unit tests.
+- Positive propulsion windrose samples are centralized here and derive from the front wheel travel direction; views consume the resulting data.
 
 ## Work Guidance
 - Use exact 3D rotation matrices; no small-angle approximations.

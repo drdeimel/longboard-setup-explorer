@@ -20,6 +20,7 @@ import React, { useMemo } from 'react'
 import type { BoardSetupConfig } from '../models/BoardSetupConfig'
 import { DEFAULT_MAX_LEAN } from '../models/BoardSetupConfig'
 import { computePivotAxis } from '../geometry/pivotAxis'
+import { computePositivePropulsionWindrose, type PropulsionWindroseSample } from '../geometry/propulsionWindrose'
 import { returnKeyGeometryCurves, type KeyGeometryResult } from '../physics/keyGeometryDataSet'
 import { UI_TEXT_MUTED, UI_TEXT_PRIMARY, UI_TEXT_SECONDARY } from '../theme/uiColors'
 
@@ -58,6 +59,9 @@ const DEFAULT_SAMPLES = 91
 
 // ICR can be very far from the board — scale to show more area
 const ICR_VIEW_SCALE = 0.16 // pixels per mm — 2x scale to make board appear 100% larger
+const WINDROSE_DIAMETER_MM = 700
+const WINDROSE_SAMPLE_COUNT = 32
+const WINDROSE_CENTER_FRACTION_OF_WHEELBASE = 0.15
 
 /**
  * Split a flat KeyGeometryResult array into two contiguous sub-arrays by the
@@ -97,6 +101,25 @@ function splitByZSign(
  */
 function toPolylinePoints(pts: [number, number][]): string {
   return pts.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ')
+}
+
+function windroseWedgePath(
+  centerX: number,
+  centerY: number,
+  sample: PropulsionWindroseSample,
+  scale: number,
+): string {
+  const radius = (WINDROSE_DIAMETER_MM / 2) * sample.ratio * scale
+  const halfWidthRad = Math.PI / WINDROSE_SAMPLE_COUNT
+  // Render leaves from the opposite end of each force direction.
+  const angleRad = (sample.appliedAngleDeg * Math.PI) / 180 + Math.PI
+  const point = (angle: number): [number, number] => [
+    centerX + radius * Math.sin(angle),
+    centerY + radius * Math.cos(angle),
+  ]
+  const [x1, y1] = point(angleRad - halfWidthRad)
+  const [x2, y2] = point(angleRad + halfWidthRad)
+  return `M ${centerX.toFixed(1)} ${centerY.toFixed(1)} L ${x1.toFixed(1)} ${y1.toFixed(1)} A ${radius.toFixed(1)} ${radius.toFixed(1)} 0 0 1 ${x2.toFixed(1)} ${y2.toFixed(1)} Z`
 }
 
 /**
@@ -255,6 +278,23 @@ const TopView: React.FC<TopViewProps> = ({
     }
   }, [icrData, activeSetupId, steeringLeanAngleDeg, maxWheelbase])
 
+  const windrose = useMemo(() => {
+    const activeCurveData = icrData.find(d => d.setup.id === activeSetupId)
+    if (!activeCurveData || activeCurveData.curve.length === 0) return null
+
+    const point = activeCurveData.curve.reduce((prev, curr) =>
+      Math.abs(curr.leanAngleDeg - steeringLeanAngleDeg) < Math.abs(prev.leanAngleDeg - steeringLeanAngleDeg) ? curr : prev,
+    )
+    const [centerX, centerY] = toSVG(refSetup.wheelbase * WINDROSE_CENTER_FRACTION_OF_WHEELBASE, 0)
+
+    return {
+      centerX,
+      centerY,
+      color: activeCurveData.setup.color,
+      samples: computePositivePropulsionWindrose(point.frontSteerAngleDeg, WINDROSE_SAMPLE_COUNT),
+    }
+  }, [icrData, activeSetupId, steeringLeanAngleDeg, refSetup.wheelbase])
+
   return (
     <svg
       width="100%"
@@ -275,7 +315,7 @@ const TopView: React.FC<TopViewProps> = ({
 
       {/* Title */}
       <text x={8} y={18} fill={UI_TEXT_PRIMARY} fontSize={11} fontFamily="monospace">
-        Top View (XZ) — ICR Locus
+        Top View (XZ) — ICR Locus + Propulsion Windrose
       </text>
 
       {/* Board outline — drawn once for the reference setup, extended by 60mm on both sides */}
@@ -376,6 +416,22 @@ const TopView: React.FC<TopViewProps> = ({
           </g>
         )
       })}
+
+      {windrose && (
+        <g aria-label="Positive propulsion ratio windrose">
+          {windrose.samples.map(sample => (
+            <path
+              key={sample.appliedAngleDeg}
+              d={windroseWedgePath(windrose.centerX, windrose.centerY, sample, icrScale)}
+              fill={sample.appliedAngleDeg === 90 || sample.appliedAngleDeg === 270 ? '#7dd3fc' : windrose.color}
+              fillOpacity={sample.appliedAngleDeg === 90 || sample.appliedAngleDeg === 270 ? 0.65 : 0.3}
+              stroke={sample.appliedAngleDeg === 90 || sample.appliedAngleDeg === 270 ? '#7dd3fc' : windrose.color}
+              strokeOpacity={sample.appliedAngleDeg === 90 || sample.appliedAngleDeg === 270 ? 0.75 : 0.45}
+              strokeWidth={0.5}
+            />
+          ))}
+        </g>
+      )}
       
       {/* Turning arc for the active setup */}
       {turningArc && (

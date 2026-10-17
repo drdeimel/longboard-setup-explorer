@@ -93,6 +93,9 @@ export interface KeyGeometryResult {
    */
   hangerRotationDeg: number
 
+  /** Front truck steer angle used to derive wheel travel direction, in degrees. */
+  frontSteerAngleDeg: number
+
   /**
    * stub
    */
@@ -305,6 +308,7 @@ export function computeKeyGeometry(
   return {
     leanAngleDeg,
     hangerRotationDeg,
+    frontSteerAngleDeg: lts.steerAngleDeg,
     invPendulumHeight,
     centerOfBoardY,
     centerOfBoardZ,
