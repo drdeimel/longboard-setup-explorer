@@ -156,8 +156,8 @@ const TopView: React.FC<TopViewProps> = ({
   ]
 
   // Precompute board outline dimensions for the reference setup (drawn once)
-  // Extend the board by 60mm on both sides (total 120mm extra width)
-  const boardExtensionMm = 60
+  // Use the configured board width without the former ICR-view padding.
+  const boardExtensionMm = 0
   const refHalfBoardWidth = boardWidthMm / 2
   const extendedHalfBoardWidth = refHalfBoardWidth + boardExtensionMm
   
@@ -282,6 +282,7 @@ const TopView: React.FC<TopViewProps> = ({
       color: refSetup.color,
       radiusMm: isStraight ? null : radius,
       icrPoint: isStraight ? null : toSVG(icrX!, icrZ!),
+      projectedIcrPoint: isStraight ? null : toSVG(icrX!, 0),
     }
   }, [keyGeometryCurves, activeSetupId, steeringLeanAngleDeg, maxWheelbase, refSetup.color])
 
@@ -291,7 +292,7 @@ const TopView: React.FC<TopViewProps> = ({
       height={height}
       viewBox={`0 0 ${width} ${height}`}
       className="block"
-      aria-label="Top view (XZ plane) with positive propulsion windrose"
+      aria-label="Top view (XZ plane) with pumping gear ratio"
     >
       {/* Background */}
       <rect width={width} height={height} fill="#0f172a" rx={4} />
@@ -305,7 +306,7 @@ const TopView: React.FC<TopViewProps> = ({
 
       {/* Title */}
       <text x={8} y={18} fill={UI_TEXT_PRIMARY} fontSize={11} fontFamily="monospace">
-        Top View (XZ) — Propulsion Windrose + Turning Arc
+        Top View (XZ) — Pumping Gear Ratio + Turning Arc
       </text>
 
       {/* Board outline — drawn once for the reference setup, extended by 60mm on both sides */}
@@ -316,9 +317,7 @@ const TopView: React.FC<TopViewProps> = ({
         height={refBoardHeightPx}
         fill="#334155"
         fillOpacity={1}
-        stroke="#475569"
-        strokeWidth={1.5}
-        strokeOpacity={1}
+        stroke="none"
         rx={3}
       />
 
@@ -351,7 +350,7 @@ const TopView: React.FC<TopViewProps> = ({
 
       <g clipPath="url(#topview-clip)">
       {windroses.map(windrose => (
-        <g key={windrose.id} aria-label={`${windrose.id} positive propulsion ratio windrose`}>
+        <g key={windrose.id} aria-label={`${windrose.id} pumping gear ratio`}>
           {windrose.samples.map(sample => {
             const isPerpendicular = sample.appliedAngleDeg === 90 || sample.appliedAngleDeg === 270
             return (
@@ -370,15 +369,26 @@ const TopView: React.FC<TopViewProps> = ({
       ))}
 
       {centerOfMoment && (
-        <circle
-          cx={centerOfMoment[0]}
-          cy={centerOfMoment[1]}
-          r={4}
-          fill="#ffffff"
-          stroke="#0f172a"
-          strokeWidth={1}
-          aria-label="Center of moment"
-        />
+        <g aria-label="Center of Moment for Pumping">
+          <circle
+            cx={centerOfMoment[0]}
+            cy={centerOfMoment[1]}
+            r={4}
+            fill="#ffffff"
+            stroke="#0f172a"
+            strokeWidth={1}
+          />
+          <text
+            x={centerOfMoment[0] + 8}
+            y={centerOfMoment[1] - 6}
+            fill="#ffffff"
+            fontSize={10}
+            fontFamily="monospace"
+          >
+            <tspan x={centerOfMoment[0] + 8} dy="0">Center of Moment</tspan>
+            <tspan x={centerOfMoment[0] + 8} dy="12">for Pumping</tspan>
+          </text>
+        </g>
       )}
 
       {turningArc && (
@@ -402,6 +412,29 @@ const TopView: React.FC<TopViewProps> = ({
           strokeWidth={1}
           aria-label="Instantaneous center of rotation"
         />
+      )}
+
+      {turningArc?.projectedIcrPoint && (
+        <g aria-label="Furthest back stable CoM position">
+          <circle
+            cx={turningArc.projectedIcrPoint[0]}
+            cy={turningArc.projectedIcrPoint[1]}
+            r={4}
+            fill="#60a5fa"
+            stroke="#0f172a"
+            strokeWidth={1}
+          />
+          <text
+            x={turningArc.projectedIcrPoint[0] + 8}
+            y={turningArc.projectedIcrPoint[1] - 6}
+            fill="#60a5fa"
+            fontSize={10}
+            fontFamily="monospace"
+          >
+            <tspan x={turningArc.projectedIcrPoint[0] + 8} dy="0">Furthest back</tspan>
+            <tspan x={turningArc.projectedIcrPoint[0] + 8} dy="12">stable CoM position</tspan>
+          </text>
+        </g>
       )}
 
       {turningArc?.radiusMm != null && turningArc.radiusMm < 99900 && (
