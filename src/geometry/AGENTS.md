@@ -14,6 +14,7 @@ Geometry engine domain.
 ## Work Guidance
 - Use exact 3D rotation matrices; no small-angle approximations.
 - Coordinate system: X = forward, Y = up, Z = lateral right. Origin = axle center.
+- Rake convention: positive rake offsets the pivot axis downward and lowers the effective rotation center.
 - All distances in mm; all angles in degrees.
 
 ## Verification

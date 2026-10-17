@@ -188,7 +188,7 @@ const SideView: React.FC<SideViewProps> = ({
   // Effective rotation center (intersection of pivot axis and hanger vertical rotation axis)
   // This is measured from the axle (Y=0), not from ground
   // At rake=0, this equals axleToBaseplateDistance (height of pivot point above axle)
-  // Positive rake moves the effective rotation center UP from the axle
+  // Positive rake moves the effective rotation center DOWN from the axle
   const truckGeom = computeTruckGeometry(
     truck.axleToBaseplateDistance,
     truck.baseplateToBoard,

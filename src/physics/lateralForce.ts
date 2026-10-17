@@ -11,9 +11,9 @@
  * 2. Trail arm `trail × cos(α)`: perpendicular distance from the wheel contact
  *    patch on the ground to the pivot axis line.
  *    The pivot axis intersects the ground (y = −wheelRadius) at:
- *      x_ground = −(rake + wheelRadius × cos(α)) / sin(α)
+ *      x_ground = −(−rake + wheelRadius × cos(α)) / sin(α)
  *    So: trail = |x_ground|, and
- *      trailArmMm = trail × cos(α) = |rake + wheelRadius × cos(α)| × cos(α) / sin(α)
+ *      trailArmMm = trail × cos(α) = |−rake + wheelRadius × cos(α)| × cos(α) / sin(α)
  *    Lean-independent (ground geometry is fixed).
  *
  * Total steering moment:
@@ -100,15 +100,15 @@ export function computeSteeringMoment(
   // Trail arm: perpendicular distance from wheel contact patch (ground) to pivot axis.
   // Lean-independent: ground geometry is fixed regardless of board lean.
   // Derivation: pivot axis hits the ground (y = −wheelRadius) at
-  //   x_ground = −(rake + wheelRadius × cos(α)) / sin(α)
+  //   x_ground = −(−rake + wheelRadius × cos(α)) / sin(α)
   // trail = |x_ground|
-  // trailArmMm = trail × cos(α) = |rake + wheelRadius × cos(α)| × cos(α) / sin(α)
+  // trailArmMm = trail × cos(α) = |−rake + wheelRadius × cos(α)| × cos(α) / sin(α)
   const wheelRadius = wheelDiameter / 2
   const pivotAxisAngleRad = (pivotAxisAngleDeg * Math.PI) / 180
   const sinPivot = Math.sin(pivotAxisAngleRad)
   const cosPivot = Math.cos(pivotAxisAngleRad)
   const trailArmMm = sinPivot > 1e-9
-    ? Math.abs(rake + wheelRadius * cosPivot) * cosPivot / sinPivot
+    ? Math.abs(-rake + wheelRadius * cosPivot) * cosPivot / sinPivot
     : 0
 
   // The lateral force that contributes to the trail moment is the component
