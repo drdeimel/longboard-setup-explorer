@@ -99,9 +99,9 @@ const SideView: React.FC<SideViewProps> = ({
   // Use groundOffsetPx to ensure alignment with FrontView
   const originY = height - groundOffsetPx - truck.wheelDiameter / 2 * ppm
 
-  /** Convert physics (X, Y) to SVG (px, py). Y is flipped (SVG y increases downward). */
+  /** Convert physics (X, Y) to SVG (px, py), mirroring X around the wheel center. */
   const toSVG = (physX: number, physY: number): [number, number] => [
-    originX + physX * ppm,
+    originX - physX * ppm,
     originY - physY * ppm,
   ]
 
@@ -179,10 +179,10 @@ const SideView: React.FC<SideViewProps> = ({
   // Arc center is at the pivot axis ground intersection point
   const arcCenterX = svgAxNeg
   const arcCenterY = svgAyNeg
-  // Arc starts along the ground (horizontal right) and sweeps up to the pivot axis
-  const arcStartX = arcCenterX + arcRadius
+  // The side view is mirrored around the wheel center, so the arc starts to the left.
+  const arcStartX = arcCenterX - arcRadius
   const arcStartY = arcCenterY
-  const arcEndX = arcCenterX + arcRadius * Math.cos(alphaRad)
+  const arcEndX = arcCenterX - arcRadius * Math.cos(alphaRad)
   const arcEndY = arcCenterY - arcRadius * Math.sin(alphaRad) // SVG y flip
 
   // Effective rotation center (intersection of pivot axis and hanger vertical rotation axis)
@@ -304,23 +304,24 @@ const SideView: React.FC<SideViewProps> = ({
       <g data-tour="side-view-inv-pendulum">
         {/* Vertical dimension line from board surface down to effective rotation center */}
         <line
-          x1={originX + 50}
+          x1={originX - 50}
           y1={boardSurfaceY}
-          x2={originX + 50}
+          x2={originX - 50}
           y2={effectiveRotCenterY}
           stroke={UI_TEXT_MUTED}
           strokeWidth={1.5}
         />
         {/* Tick marks at endpoints */}
-        <line x1={originX + 46} y1={boardSurfaceY} x2={originX + 54} y2={boardSurfaceY} stroke={UI_TEXT_MUTED} strokeWidth={1} />
-        <line x1={originX + 46} y1={effectiveRotCenterY} x2={originX + 54} y2={effectiveRotCenterY} stroke={UI_TEXT_MUTED} strokeWidth={1} />
+        <line x1={originX - 54} y1={boardSurfaceY} x2={originX - 46} y2={boardSurfaceY} stroke={UI_TEXT_MUTED} strokeWidth={1} />
+        <line x1={originX - 54} y1={effectiveRotCenterY} x2={originX - 46} y2={effectiveRotCenterY} stroke={UI_TEXT_MUTED} strokeWidth={1} />
         {/* Value label */}
         <text
-          x={originX + 58}
+          x={originX - 58}
           y={(boardSurfaceY + effectiveRotCenterY) / 2 + 4}
           fill={UI_TEXT_MUTED}
           fontSize={9}
           fontFamily="monospace"
+          textAnchor="end"
         >
          inverse pendulum: {invPendulumHeight.toFixed(1)}mm
         </text>
@@ -372,7 +373,7 @@ const SideView: React.FC<SideViewProps> = ({
 
       {/* Pivot angle arc annotation */}
       <path
-        d={`M ${arcStartX} ${arcStartY} A ${arcRadius} ${arcRadius} 0 0 0 ${arcEndX} ${arcEndY}`}
+        d={`M ${arcStartX} ${arcStartY} A ${arcRadius} ${arcRadius} 0 0 1 ${arcEndX} ${arcEndY}`}
         fill="none"
         stroke={UI_TEXT_PRIMARY}
         strokeWidth={1}
@@ -387,25 +388,25 @@ const SideView: React.FC<SideViewProps> = ({
         {alphaDeg}°
       </text>
 
-      {/* Ground-to-board dimension (board surface height) - moved to left side */}
+      {/* Ground-to-board dimension (board surface height) - mirrored to the right side */}
       <line
-        x1={originX - 100}
+        x1={originX + 100}
         y1={groundY}
-        x2={originX - 100}
+        x2={originX + 100}
         y2={boardSurfaceY}
         stroke={UI_TEXT_MUTED}
         strokeWidth={1.5}
       />
       {/* Tick marks */}
-      <line x1={originX - 104} y1={groundY} x2={originX - 96} y2={groundY} stroke={UI_TEXT_MUTED} strokeWidth={1} />
-      <line x1={originX - 104} y1={boardSurfaceY} x2={originX - 96} y2={boardSurfaceY} stroke={UI_TEXT_MUTED} strokeWidth={1} />
+      <line x1={originX + 96} y1={groundY} x2={originX + 104} y2={groundY} stroke={UI_TEXT_MUTED} strokeWidth={1} />
+      <line x1={originX + 96} y1={boardSurfaceY} x2={originX + 104} y2={boardSurfaceY} stroke={UI_TEXT_MUTED} strokeWidth={1} />
       <text
-        x={originX - 108}
+        x={originX + 108}
         y={(groundY + boardSurfaceY) / 2 + 4}
         fill={UI_TEXT_MUTED}
         fontSize={9}
         fontFamily="monospace"
-        textAnchor="end"
+        textAnchor="start"
       >
         total height: {dBoardToGround}mm
       </text>
