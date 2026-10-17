@@ -52,7 +52,7 @@ export function computeTruckGeometry(
   
   const pivotAxisAngleRad = (pivotAxisAngleDeg * Math.PI) / 180
   // Note: totalBaseplateToBoard already includes boardThicknessMm, so we don't add it again.
-  const invPendulumHeight = axleToBaseplateDistance + totalBaseplateToBoard + rake / Math.cos(pivotAxisAngleRad)
+  const invPendulumHeight = axleToBaseplateDistance + totalBaseplateToBoard - rake / Math.cos(pivotAxisAngleRad)
   
   const rotCenterY = dBoard - invPendulumHeight
 

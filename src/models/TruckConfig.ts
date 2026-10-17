@@ -58,8 +58,8 @@ export interface TruckConfig {
 
   /**
    * Rake `r` — perpendicular distance from the axle center to the pivot axis
-   * line, measured in the XY plane. Positive values lower the pivot axis
-   * relative to the axle center.
+   * line, measured in the XY plane. Positive values shift the pivot axis
+   * forward of the axle center.
    * @units mm
    */
   rake: number

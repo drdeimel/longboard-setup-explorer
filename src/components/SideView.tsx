@@ -197,7 +197,8 @@ const SideView: React.FC<SideViewProps> = ({
 
   // Board surface line - extends to the edges of the visible geometry box
   const [, boardSurfaceY] = toSVG(0, dBoard)
-  const boardLineLeft = 20
+  // Leave roughly one quarter of the pane width clear on the forward (left) side.
+  const boardLineLeft = width * 0.25
   const boardLineRight = width - 20
   // Board thickness is controlled globally from App/ConfigPanel.
   // The top edge stays on boardSurfaceY; the body extends downward.
@@ -224,7 +225,7 @@ const SideView: React.FC<SideViewProps> = ({
   // Effective rotation center (intersection of pivot axis and hanger vertical rotation axis)
   // This is measured from the axle (Y=0), not from ground
   // At rake=0, this equals axleToBaseplateDistance (height of pivot point above axle)
-  // Positive rake moves the effective rotation center DOWN from the axle
+  // Positive rake moves the effective rotation center UP from the axle
   const truckGeom = computeTruckGeometry(
     truck.axleToBaseplateDistance,
     truck.baseplateToBoard,

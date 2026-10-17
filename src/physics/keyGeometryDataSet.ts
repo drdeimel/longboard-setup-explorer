@@ -54,7 +54,7 @@ export const DISPLAY_BOARD_LINE_PADDING = 20 // Padding for board line in front 
  * This is the vertical distance from the axle center to the effective rotation
  * point where the pivot axis intersects the hanger's vertical rotation axis.
  * 
- * Formula: invPendulumHeight = axleToBaseplateDistance + baseplateToBoard + boardThicknessMm + rake / cos(α)
+ * Formula: invPendulumHeight = axleToBaseplateDistance + baseplateToBoard + boardThicknessMm - rake / cos(α)
  * 
  * @param axleToBaseplateDistance - Vertical distance from axle to baseplate (mm)
  * @param baseplateToBoard - Vertical distance from baseplate to board surface (mm)
@@ -71,7 +71,7 @@ export function computeInvPendulumHeight(
 ): number {
   const pivotAxisAngleRad = (pivotAxisAngleDeg * Math.PI) / 180
   // Note: baseplateToBoard passed from App.tsx already includes boardThicknessMm
-  return axleToBaseplateDistance + baseplateToBoard + rake / Math.cos(pivotAxisAngleRad)
+  return axleToBaseplateDistance + baseplateToBoard - rake / Math.cos(pivotAxisAngleRad)
 }
 
 /** Gravitational acceleration in m/s². */

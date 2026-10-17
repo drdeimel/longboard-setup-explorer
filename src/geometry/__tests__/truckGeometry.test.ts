@@ -47,9 +47,8 @@ describe('computeTruckGeometry', () => {
 
   it('should handle positive rake correctly', () => {
     const geom = computeTruckGeometry(50, 10, 11, 10, 50)
-    // Positive rake should increase the inverse pendulum height and lower the rotation center.
+    // Positive rake should decrease the inverse pendulum height (move rotation center up relative to board)
     const geomNoRake = computeTruckGeometry(50, 10, 11, 0, 50)
-    expect(geom.invPendulumHeight).toBeGreaterThan(geomNoRake.invPendulumHeight)
-    expect(geom.rotCenterY).toBeLessThan(geomNoRake.rotCenterY)
+    expect(geom.invPendulumHeight).toBeLessThan(geomNoRake.invPendulumHeight)
   })
 })

@@ -32,8 +32,7 @@ export interface RearTruckConfig {
 
   /**
    * Rake `r_rear` — perpendicular distance from the rear axle center to the
-   * rear pivot axis line, measured in the XY plane. Positive values lower the
-   * pivot axis relative to the axle center.
+   * rear pivot axis line, measured in the XY plane. Positive shifts forward.
    * @units mm
    */
   rake: number

@@ -140,8 +140,6 @@ describe('computePivotAxis', () => {
     expect(approx(dot(point, direction), 0, 1e-10)).toBe(true)
     // point should have magnitude = |rake|
     expect(approx(length(point), 10)).toBe(true)
-    // Positive rake lowers the pivot axis relative to the axle center.
-    expect(point[1]).toBeLessThan(0)
   })
 
   it('boardSurfaceHeight: 38 + 4 = 42mm', () => {

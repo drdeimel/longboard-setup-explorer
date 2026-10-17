@@ -71,7 +71,7 @@ The pivot axis is a 3D line parameterised by three values:
 | Parameter | Symbol | Description |
 |-----------|--------|-------------|
 | `pivotAxisAngle` | α | Angle of the pivot axis above horizontal in the XY (side-view) plane. Typical range: 20°–65°. |
-| `rake` | r | Perpendicular distance from the axle center to the pivot axis line, in the XY plane. Positive rake lowers the pivot axis and effective rotation center. |
+| `rake` | r | Perpendicular distance from the axle center to the pivot axis line, in the XY plane. Positive = axis passes forward of axle. |
 
 The axis direction is `n̂ = (cos α, sin α, 0)`. The closest point on the axis to the origin is `P = r × n̂⊥` where `n̂⊥ = (−sin α, cos α, 0)`.
 

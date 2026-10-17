@@ -45,16 +45,15 @@ export interface PivotAxisLine {
  * center to the axis line in the XY plane. The perpendicular to `n̂` in the
  * XY plane is `n̂_perp = (−sin α, cos α, 0)`, so:
  *
- *   P_axis = −r × n̂_perp = r × (sin α, −cos α, 0)
+ *   P_axis = r × n̂_perp = r × (−sin α, cos α, 0)
  *
- * This means positive rake shifts the axis point backward and downward relative
- * to the axle center, lowering the effective rotation center.
+ * This means positive rake shifts the axis point forward and upward relative
+ * to the axle center (i.e., the axis passes above/ahead of the axle).
  *
  * @param pivotAxisAngleDeg - Angle `α` of the pivot axis above horizontal
  *   in the XY (side-view) plane. In degrees. Typical range: 20°–65°.
  * @param rake - Perpendicular distance `r` from axle center to pivot axis
- *   line, in the XY plane. In mm. Positive rake lowers the axis relative to
- *   the axle center.
+ *   line, in the XY plane. In mm. Positive = axis passes forward of axle.
  * @returns `PivotAxisLine` — unit direction vector and point on the axis.
  */
 export function computePivotAxis(
@@ -70,8 +69,8 @@ export function computePivotAxis(
   // n̂_perp = (−sin α,  cos α,  0)
   const perpXY: Vec3 = [-Math.sin(α), Math.cos(α), 0]
 
-  // Positive rake is defined as a downward offset from the axle center.
-  const point: Vec3 = scale(perpXY, -rake)
+  // Point on axis (closest to origin) displaced by rake along the perpendicular
+  const point: Vec3 = scale(perpXY, rake)
 
   return { direction, point }
 }
@@ -98,4 +97,3 @@ export function boardSurfaceHeight(
 ): number {
   return axleToBaseplateDistance + baseplateToBoard
 }
-
