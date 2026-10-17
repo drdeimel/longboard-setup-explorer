@@ -443,6 +443,7 @@ const App: React.FC = () => {
             pixelsPerMm={sharedPpm}
             groundOffsetPx={sharedGroundOffsetPx}
             boardThicknessMm={riderParams.boardThicknessMm}
+            leanAngleDeg={steeringLeanAngleDeg}
           />
         </div>
 
@@ -482,6 +483,7 @@ const App: React.FC = () => {
                 pixelsPerMm={sharedPpm}
                 groundOffsetPx={sharedGroundOffsetPx}
                 boardThicknessMm={riderParams.boardThicknessMm}
+                leanAngleDeg={steeringLeanAngleDeg}
               />
             </div>
 

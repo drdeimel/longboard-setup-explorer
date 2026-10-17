@@ -7,7 +7,7 @@
  *
  * Elements drawn:
  * - Road surface (ground plane at y = −wheelDiameter/2)
- * - Wheel outline (circle)
+ * - Wheel outline (inner/outer rims with connecting tread lines)
  * - Axle center (origin, marked with crosshair)
  * - Board surface (horizontal line at y = axleToBoardDistance)
  * - Pivot axis line (extends through the truck, colored by setup color)
@@ -22,7 +22,9 @@ import React from 'react'
 import type { TruckConfig } from '../models/TruckConfig'
 import { computePivotAxis, boardSurfaceHeight } from '../geometry/pivotAxis'
 import { computeTruckGeometry } from '../geometry/truckGeometry'
-import { DISPLAY_GEOMETRY_WIDTH_MM } from '../physics/keyGeometryDataSet'
+import { computeSideViewMotion } from '../geometry/sideViewMotion'
+import { computeWheelAxleZPositions, computeWheelRimZPositions } from '../geometry/wheelRimPositions'
+import { DISPLAY_GEOMETRY_WIDTH_MM, DISPLAY_WHEEL_OFFSET_MM, DISPLAY_WHEEL_WIDTH_MM } from '../physics/keyGeometryDataSet'
 import { UI_TEXT_MUTED, UI_TEXT_PRIMARY } from '../theme/uiColors'
 
 /** Props for the SideView component. */
@@ -47,6 +49,8 @@ interface SideViewProps {
   groundOffsetPx?: number
   /** Global board thickness in mm (shared with FrontView). */
   boardThicknessMm?: number
+  /** Board lean angle used to animate steering and wheel trail. */
+  leanAngleDeg?: number
 }
 
 /** Default SVG dimensions. */
@@ -67,6 +71,7 @@ const SideView: React.FC<SideViewProps> = ({
   pixelsPerMm,
   groundOffsetPx = 30,
   boardThicknessMm = 11,
+  leanAngleDeg = 0,
 }) => {
   const dBoard = boardSurfaceHeight(
     truck.axleToBaseplateDistance,
@@ -79,6 +84,11 @@ const SideView: React.FC<SideViewProps> = ({
   const { direction: axisDir, point: axisPoint } = computePivotAxis(
     truck.pivotAxisAngle,
     truck.rake,
+  )
+  const sideMotion = computeSideViewMotion(
+    truck.pivotAxisAngle,
+    truck.rake,
+    leanAngleDeg,
   )
 
   // Determine scale: fit the geometry into the SVG with some padding
@@ -152,9 +162,27 @@ const SideView: React.FC<SideViewProps> = ({
   const [svgAxPos, svgAyPos] = toSVG(axPos, ayPos)
   const [svgAxNeg, svgAyNeg] = toSVG(axNeg, ayNeg)
 
-  // Wheel circle center is at axle center (origin in physics = (0,0))
-  const [wheelCx, wheelCy] = toSVG(0, 0)
+  const rimZ = computeWheelRimZPositions(
+    truck.trackWidth,
+    DISPLAY_WHEEL_OFFSET_MM,
+    DISPLAY_WHEEL_WIDTH_MM,
+  )
+  const steerRad = (sideMotion.steerAngleDeg * Math.PI) / 180
+  const wheelRimX = (z: number): number => sideMotion.axleOffsetX - Math.sin(steerRad) * z
+  const leftOuterX = wheelRimX(rimZ.leftOuterZ)
+  const leftInnerX = wheelRimX(rimZ.leftInnerZ)
+  const rightInnerX = wheelRimX(rimZ.rightInnerZ)
+  const rightOuterX = wheelRimX(rimZ.rightOuterZ)
+  const axleZ = computeWheelAxleZPositions(truck.trackWidth)
+  const [leftAxleX, axleY] = toSVG(wheelRimX(axleZ.leftZ), 0)
+  const [rightAxleX] = toSVG(wheelRimX(axleZ.rightZ), 0)
+  const [leftOuterWheelX, wheelCy] = toSVG(leftOuterX, 0)
+  const [leftInnerWheelX] = toSVG(leftInnerX, 0)
+  const [rightInnerWheelX] = toSVG(rightInnerX, 0)
+  const [rightOuterWheelX] = toSVG(rightOuterX, 0)
   const wheelR = truck.wheelDiameter / 2 * ppm
+  const wheelEllipseRx = wheelR * Math.abs(Math.cos(steerRad))
+  const wheelEllipseRy = wheelR
 
   // Axle center crosshair
   const [axleSvgX, axleSvgY] = toSVG(0, 0)
@@ -202,9 +230,10 @@ const SideView: React.FC<SideViewProps> = ({
   // Trailing: horizontal distance from wheel contact patch (x=0) to where
   // the pivot axis intersects the ground plane (y = -wheelRadius)
   // axNeg is the x-coordinate of the pivot axis ground intersection point
-  const trailingMm = Math.abs(axNeg)
+  const axleMidpointX = (leftOuterX + rightOuterX) / 2
+  const trailingMm = Math.abs(axNeg - axleMidpointX)
   const trailingIndicatorY = groundY + 10
-  const [trailingStartX] = toSVG(0, -wheelRadius) // wheel contact patch x
+  const [trailingStartX] = toSVG(axleMidpointX, -wheelRadius) // moving wheel contact patch x
   const trailingEndX = svgAxNeg // pivot axis ground intersection x
 
   return (
@@ -237,17 +266,41 @@ const SideView: React.FC<SideViewProps> = ({
         ground
       </text>
 
-      {/* Wheel circle */}
-      <circle
-        cx={wheelCx}
-        cy={wheelCy}
-        r={wheelR}
-        fill="none"
-        stroke="#475569"
-        strokeWidth={1.5}
-      />
+      {/* Four wheel rims: left/right outer and inner rims. */}
+      <g stroke="#475569" strokeWidth={1.5} fill="none">
+        <line x1={leftOuterWheelX} y1={wheelCy - wheelR} x2={leftInnerWheelX} y2={wheelCy - wheelR} />
+        <line x1={leftOuterWheelX} y1={wheelCy + wheelR} x2={leftInnerWheelX} y2={wheelCy + wheelR} />
+        <line x1={rightInnerWheelX} y1={wheelCy - wheelR} x2={rightOuterWheelX} y2={wheelCy - wheelR} />
+        <line x1={rightInnerWheelX} y1={wheelCy + wheelR} x2={rightOuterWheelX} y2={wheelCy + wheelR} />
+        {Math.abs(sideMotion.steerAngleDeg) < 0.5 ? (
+          <>
+            <circle cx={leftOuterWheelX} cy={wheelCy} r={wheelR} />
+            <circle cx={leftInnerWheelX} cy={wheelCy} r={wheelR} />
+            <circle cx={rightInnerWheelX} cy={wheelCy} r={wheelR} />
+            <circle cx={rightOuterWheelX} cy={wheelCy} r={wheelR} />
+          </>
+        ) : (
+          <>
+            <ellipse cx={leftOuterWheelX} cy={wheelCy} rx={wheelEllipseRx} ry={wheelEllipseRy} />
+            <ellipse cx={leftInnerWheelX} cy={wheelCy} rx={wheelEllipseRx} ry={wheelEllipseRy} />
+            <ellipse cx={rightInnerWheelX} cy={wheelCy} rx={wheelEllipseRx} ry={wheelEllipseRy} />
+            <ellipse cx={rightOuterWheelX} cy={wheelCy} rx={wheelEllipseRx} ry={wheelEllipseRy} />
+          </>
+        )}
+      </g>
       {/* Wheel contact point */}
-      <circle cx={wheelCx} cy={groundY} r={3} fill={UI_TEXT_MUTED} />
+      <circle cx={toSVG(axleMidpointX, 0)[0]} cy={groundY} r={3} fill={UI_TEXT_MUTED} />
+
+      {/* Steered axle: orthographic XY projection of the axle spanning both wheels. */}
+      <line
+        x1={leftAxleX}
+        y1={axleY}
+        x2={rightAxleX}
+        y2={axleY}
+        stroke="#475569"
+        strokeWidth={2.5}
+        opacity={0.9}
+      />
 
       {/* Board surface */}
       <rect

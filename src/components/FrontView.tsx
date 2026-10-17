@@ -24,6 +24,7 @@ import type { TruckConfig } from '../models/TruckConfig'
 import { boardSurfaceHeight } from '../geometry/pivotAxis'
 import { computeTruckGeometry } from '../geometry/truckGeometry'
 import { computeLeanToSteer } from '../geometry/leanToSteer'
+import { computeWheelAxleZPositions, computeWheelRimZPositions } from '../geometry/wheelRimPositions'
 import { DISPLAY_WHEEL_OFFSET_MM, DISPLAY_WHEEL_WIDTH_MM } from '../physics/keyGeometryDataSet'
 import type { KeyGeometryResult } from '../physics/keyGeometryDataSet'
 import { UI_TEXT_MUTED, UI_TEXT_PRIMARY } from '../theme/uiColors'
@@ -167,7 +168,7 @@ const FrontView: React.FC<FrontViewProps> = ({
   const isNearZeroSteer = Math.abs(steerResult.steerAngleDeg) < 0.5
 
   // Geometry extents (in mm)
-  const halfTrack = (truck.trackWidth / 2) * steerProjection
+  const axleZ = computeWheelAxleZPositions(truck.trackWidth)
   const geometryWidthMm = truck.trackWidth * steerProjection + 180 // padding for board line and margins
   const geometryHeightMm = dBoard + truck.wheelDiameter / 2 + 30  
 
@@ -197,19 +198,24 @@ const FrontView: React.FC<FrontViewProps> = ({
   const wheelEllipseRx = (wheelHeight * Math.abs(Math.sin(steerAngleRad))) / 2
   const wheelEllipseRy = wheelHeight / 2
 
-  const wheelOffset = DISPLAY_WHEEL_OFFSET_MM
-
-  const [leftWheelX] = toSVG(-halfTrack - wheelOffset * steerProjection, 0)
-  const [rightWheelX] = toSVG(halfTrack + wheelOffset * steerProjection, 0)
+  const rimZ = computeWheelRimZPositions(
+    truck.trackWidth,
+    DISPLAY_WHEEL_OFFSET_MM,
+    DISPLAY_WHEEL_WIDTH_MM,
+  )
+  const leftWheelCenterZ = (rimZ.leftOuterZ + rimZ.leftInnerZ) / 2
+  const rightWheelCenterZ = (rimZ.rightInnerZ + rimZ.rightOuterZ) / 2
+  const [leftWheelX] = toSVG(leftWheelCenterZ * steerProjection, 0)
+  const [rightWheelX] = toSVG(rightWheelCenterZ * steerProjection, 0)
 
   // Axle line endpoints
-  const [leftAxleX, axleY] = toSVG(-halfTrack, 0)
-  const [rightAxleX] = toSVG(halfTrack, 0)
+  const [leftAxleX, axleY] = toSVG(axleZ.leftZ * steerProjection, 0)
+  const [rightAxleX] = toSVG(axleZ.rightZ * steerProjection, 0)
 
   // Hanger body (simplified rectangle between the wheel contact points)
   // const hangerTop = originY - (truck.axleToBaseplateDistance * ppm * 0.6)
   // const hangerHeight = truck.axleToBaseplateDistance * ppm * 0.6
-  // const hangerHalfWidth = (halfTrack - 10) * steerProjection * ppm
+  // const hangerHalfWidth = (truck.trackWidth / 2 - 10) * steerProjection * ppm
 
   // Calculate tilted board endpoints
   const leanRad = (effectiveLeanAngleDeg * Math.PI) / 180

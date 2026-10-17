@@ -14,6 +14,8 @@
 import { describe, it, expect } from 'vitest'
 import { computePivotAxis, boardSurfaceHeight } from '../pivotAxis'
 import { computeLeanToSteer, leanToSteerCurve } from '../leanToSteer'
+import { computeSideViewMotion } from '../sideViewMotion'
+import { computeWheelAxleZPositions, computeWheelRimZPositions } from '../wheelRimPositions'
 import { computeRotationAxisDist } from '../rotationAxisDist'
 import { computeICR } from '../turningCenter'
 import { dot, cross, normalize, length } from '../../math/vec3'
@@ -235,6 +237,38 @@ describe('computeLeanToSteer', () => {
     const curve = leanToSteerCurve(pivotDir50, -45, 45, 91)
     const direct = computeLeanToSteer(pivotDir50, -45)
     expect(approx(curve[0].steerAngleDeg, direct.steerAngleDeg)).toBe(true)
+  })
+})
+
+describe('computeSideViewMotion', () => {
+  it('keeps the axle centered at zero lean', () => {
+    const result = computeSideViewMotion(50, 10, 0)
+    expect(approx(result.steerAngleDeg, 0, 1e-8)).toBe(true)
+    expect(approx(result.hangerRotationDeg, 0, 1e-8)).toBe(true)
+    expect(approx(result.axleOffsetX, 0, 1e-8)).toBe(true)
+  })
+
+  it('moves the axle fore/aft with signed lean when rake is present', () => {
+    const positive = computeSideViewMotion(50, 10, 20)
+    const negative = computeSideViewMotion(50, 10, -20)
+    expect(Math.abs(positive.axleOffsetX)).toBeGreaterThan(0)
+    expect(approx(positive.axleOffsetX, negative.axleOffsetX, 1e-8)).toBe(true)
+  })
+})
+
+describe('computeWheelRimZPositions', () => {
+  it('places all rims on the expected sides and preserves wheel width', () => {
+    const rims = computeWheelRimZPositions(200, 10, 24)
+    expect(rims.leftOuterZ).toBe(-122)
+    expect(rims.leftInnerZ).toBe(-98)
+    expect(rims.rightInnerZ).toBe(98)
+    expect(rims.rightOuterZ).toBe(122)
+  })
+})
+
+describe('computeWheelAxleZPositions', () => {
+  it('centers the axle endpoints around the board centerline', () => {
+    expect(computeWheelAxleZPositions(200)).toEqual({ leftZ: -100, rightZ: 100 })
   })
 })
 
