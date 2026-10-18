@@ -118,7 +118,7 @@ function isPersistedAppState(value: unknown): value is PersistedAppState {
   if (typeof v['riderParams'] !== 'object' || v['riderParams'] === null) return false
   if (typeof v['activeSetupId'] !== 'string') return false
   if (typeof v['steeringLeanAngleDeg'] !== 'number') return false
-  if (v['leanMotion'] !== 'manual' && v['leanMotion'] !== 'sinusoidal' && v['leanMotion'] !== 'trapezoidal') return false
+  if (v['leanMotion'] !== 'manual' && v['leanMotion'] !== 'sinusoidal' && v['leanMotion'] !== 'sinusoidal-5x' && v['leanMotion'] !== 'trapezoidal' && v['leanMotion'] !== 'trapezoidal-5x') return false
 
   const rp = v['riderParams'] as Record<string, unknown>
   if (typeof rp['massKg'] !== 'number') return false

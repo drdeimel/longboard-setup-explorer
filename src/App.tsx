@@ -40,6 +40,19 @@ import { TOURS } from './tours/tourDefinitions'
 import TourOverlay from './components/TourOverlay'
 import TourSelector from './components/TourSelector'
 import { getLeanWaveform, type LeanMotion } from './models/leanWaveforms'
+import MotionTopView, { type MotionTracePoint } from './components/MotionTopView'
+import {
+  BOARD_MOTION_UPDATE_PERIOD_MS,
+  computeZoomToFitViewport,
+  MOTION_TRACE_DURATION_S,
+  MOTION_VIEW_SCALE_PX_PER_MM,
+  SIMULATION_TIME_SCALE,
+  updateBoardPose,
+  updateViewportCenter,
+  type BoardPose,
+  type MotionViewportMode,
+} from './geometry/boardMotion'
+import type { Point2D } from './geometry/turningCenter'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Default state
@@ -167,6 +180,17 @@ const App: React.FC = () => {
     initial.steeringLeanAngleDeg,
   )
   const [leanMotion, setLeanMotion] = useState<LeanMotion>(initial.leanMotion)
+  const [isSimulationPlaying, setIsSimulationPlaying] = useState(true)
+  const [boardVelocityMs, setBoardVelocityMs] = useState(3.0)
+  const [motionPose, setMotionPose] = useState<BoardPose>({ position: { x: 0, z: 0 }, headingRad: 0 })
+  const [motionTrace, setMotionTrace] = useState<MotionTracePoint[]>([])
+  const [motionViewportCenter, setMotionViewportCenter] = useState<Point2D>({ x: 0, z: 0 })
+  const [motionViewportMode, setMotionViewportMode] = useState<MotionViewportMode>('follow')
+  const [motionViewportScale, setMotionViewportScale] = useState(MOTION_VIEW_SCALE_PX_PER_MM)
+  const motionPoseRef = useRef<BoardPose>(motionPose)
+  const motionTraceRef = useRef<MotionTracePoint[]>(motionTrace)
+  const motionViewportCenterRef = useRef<Point2D>(motionViewportCenter)
+  const motionViewportScaleRef = useRef(motionViewportScale)
 
   const handleManualLeanChange = useCallback(
     (angleDeg: number) => {
@@ -284,23 +308,6 @@ const App: React.FC = () => {
     }
   }, [setups, activeSetupId, riderParams, steeringLeanAngleDeg, leanMotion])
 
-  useEffect(() => {
-    if (leanMotion === 'manual') return
-
-    const waveform = getLeanWaveform(leanMotion)
-    const startedAt = performance.now()
-    let frame = 0
-    const animate = (timestamp: number) => {
-      const elapsedSeconds = (timestamp - startedAt) / 1000
-      setSteeringLeanAngleDeg(
-        waveform.evaluate(elapsedSeconds, -riderParams.maxLeanAngle, riderParams.maxLeanAngle, steeringLeanAngleDeg),
-      )
-      frame = requestAnimationFrame(animate)
-    }
-    frame = requestAnimationFrame(animate)
-    return () => cancelAnimationFrame(frame)
-  }, [leanMotion, riderParams.maxLeanAngle])
-
   // ── Derived ───────────────────────────────────────────────────────────────
   const activeSetup = setups.find(s => s.id === activeSetupId) ?? setups[0]
   const requiredExtentMm = useMemo(() => {
@@ -355,6 +362,125 @@ const App: React.FC = () => {
 
   // ── Key Geometry Curves (computed once per setup when config changes) ───────
   const keyGeometryCurves = useKeyGeometryCurves(setups, riderParams)
+
+  const simulationTimeRef = useRef(0)
+  const motionInputsRef = useRef({
+    steeringLeanAngleDeg,
+    keyGeometryCurves,
+    activeSetupId,
+    activeSetupColor: activeSetup.color,
+    leanMotion,
+    maxLeanAngle: riderParams.maxLeanAngle,
+    viewportMode: motionViewportMode,
+  })
+  motionInputsRef.current = {
+    steeringLeanAngleDeg,
+    keyGeometryCurves,
+    activeSetupId,
+    activeSetupColor: activeSetup.color,
+    leanMotion,
+    maxLeanAngle: riderParams.maxLeanAngle,
+    viewportMode: motionViewportMode,
+  }
+
+  const handleMotionViewportModeChange = useCallback((mode: MotionViewportMode) => {
+    setMotionViewportMode(mode)
+    if (mode === 'follow') {
+      motionViewportScaleRef.current = MOTION_VIEW_SCALE_PX_PER_MM
+      setMotionViewportScale(MOTION_VIEW_SCALE_PX_PER_MM)
+      return
+    }
+    const fitted = computeZoomToFitViewport(
+      motionTraceRef.current.map(point => point.position),
+      640,
+      300,
+    )
+    motionViewportCenterRef.current = fitted.center
+    motionViewportScaleRef.current = fitted.scale
+    setMotionViewportCenter(fitted.center)
+    setMotionViewportScale(fitted.scale)
+  }, [])
+
+  useEffect(() => {
+    if (!isSimulationPlaying) return
+
+    let animationFrame = 0
+    let previousTimestamp = performance.now()
+
+    const animateSimulation = (timestamp: number) => {
+      const elapsedMilliseconds = timestamp - previousTimestamp
+      if (elapsedMilliseconds < BOARD_MOTION_UPDATE_PERIOD_MS) {
+        animationFrame = requestAnimationFrame(animateSimulation)
+        return
+      }
+      const realDeltaTimeSeconds = Math.min(
+        0.1,
+        Math.max(0, elapsedMilliseconds / 1000),
+      )
+      previousTimestamp = timestamp
+      const deltaTimeSeconds = realDeltaTimeSeconds * SIMULATION_TIME_SCALE
+      simulationTimeRef.current += deltaTimeSeconds
+      const inputs = motionInputsRef.current
+
+      if (inputs.leanMotion !== 'manual') {
+        const waveform = getLeanWaveform(inputs.leanMotion)
+        setSteeringLeanAngleDeg(
+          waveform.evaluate(
+            simulationTimeRef.current,
+            -inputs.maxLeanAngle,
+            inputs.maxLeanAngle,
+            inputs.steeringLeanAngleDeg,
+          ),
+        )
+      }
+
+      const curve = inputs.keyGeometryCurves.find(entry => entry.setupId === inputs.activeSetupId)?.curve
+      const currentGeometry = curve?.reduce((previous, current) =>
+        Math.abs(current.leanAngleDeg - inputs.steeringLeanAngleDeg) < Math.abs(previous.leanAngleDeg - inputs.steeringLeanAngleDeg) ? current : previous,
+      )
+      const icr = currentGeometry?.turningCenterX != null && currentGeometry.turningCenterZ != null
+        ? { x: currentGeometry.turningCenterX, z: currentGeometry.turningCenterZ }
+        : null
+      const nextPose = updateBoardPose(motionPoseRef.current, {
+        icr,
+        velocityMmPerSecond: boardVelocityMs * 1000,
+        deltaTimeSeconds,
+        orientationCorrectionEnabled: inputs.leanMotion !== 'manual',
+      })
+      motionPoseRef.current = nextPose
+      setMotionPose(nextPose)
+
+      const nextTrace = [
+        ...motionTraceRef.current,
+        { position: nextPose.position, timeSeconds: simulationTimeRef.current, color: inputs.activeSetupColor },
+      ].filter(point => simulationTimeRef.current - point.timeSeconds <= MOTION_TRACE_DURATION_S)
+
+      const nextViewport = inputs.viewportMode === 'zoom-to-fit'
+        ? computeZoomToFitViewport(nextTrace.map(point => point.position), 640, 300)
+        : {
+            center: updateViewportCenter(
+              motionViewportCenterRef.current,
+              nextPose.position,
+              640,
+              300,
+              deltaTimeSeconds,
+            ),
+            scale: MOTION_VIEW_SCALE_PX_PER_MM,
+          }
+      const nextCenter = nextViewport.center
+      motionViewportCenterRef.current = nextCenter
+      setMotionViewportCenter(nextCenter)
+      motionViewportScaleRef.current = nextViewport.scale
+      setMotionViewportScale(nextViewport.scale)
+      motionTraceRef.current = nextTrace
+      setMotionTrace(nextTrace)
+
+      animationFrame = requestAnimationFrame(animateSimulation)
+    }
+
+    animationFrame = requestAnimationFrame(animateSimulation)
+    return () => cancelAnimationFrame(animationFrame)
+  }, [isSimulationPlaying, boardVelocityMs])
 
   // ── Setup mutation handlers ────────────────────────────────────────────────
 
@@ -486,6 +612,8 @@ const App: React.FC = () => {
             riderParams={riderParams}
             steeringLeanAngleDeg={steeringLeanAngleDeg}
             leanMotion={leanMotion}
+            isSimulationPlaying={isSimulationPlaying}
+            onSimulationPlayingChange={setIsSimulationPlaying}
             onSetupChange={handleSetupChange}
             onSetupDuplicate={handleSetupDuplicate}
             onSetupDelete={handleSetupDelete}
@@ -493,6 +621,8 @@ const App: React.FC = () => {
             onRiderParamsChange={setRiderParams}
             onSteeringLeanAngleChange={handleManualLeanChange}
             onLeanMotionChange={setLeanMotion}
+            boardVelocityMs={boardVelocityMs}
+            onBoardVelocityChange={setBoardVelocityMs}
             onLoadPreset={handleLoadPreset}
             onShare={handleShare}
           />
@@ -554,14 +684,18 @@ const App: React.FC = () => {
                 steeringLeanAngleDeg={steeringLeanAngleDeg}
               />
             </div>
-            <div className="h-64" data-tour="lean-vs-steer">
-              <LeanVsSteerChart
-                setups={setups}
-                riderMassKg={riderParams.massKg}
-                comHeightM={riderParams.comHeightM}
-                boardThicknessMm={riderParams.boardThicknessMm}
-                activeSetupId={activeSetupId}
-                keyGeometryCurves={keyGeometryCurves}
+            <div className="h-72">
+              <MotionTopView
+                setup={activeSetup}
+                pose={motionPose}
+                trace={motionTrace}
+                viewportCenter={motionViewportCenter}
+                viewportScale={motionViewportScale}
+                viewportMode={motionViewportMode}
+                onViewportModeChange={handleMotionViewportModeChange}
+                boardWidthMm={riderParams.boardWidthMm}
+                steeringLeanAngleDeg={steeringLeanAngleDeg}
+                keyGeometryCurve={keyGeometryCurves.find(entry => entry.setupId === activeSetupId)?.curve}
               />
             </div>
             <div className="h-64" data-tour="rotational-stiffness-chart">
@@ -594,6 +728,16 @@ const App: React.FC = () => {
             </div>
             <div className="h-64">
               <LeanVsBushingTorqueChart
+                setups={setups}
+                riderMassKg={riderParams.massKg}
+                comHeightM={riderParams.comHeightM}
+                boardThicknessMm={riderParams.boardThicknessMm}
+                activeSetupId={activeSetupId}
+                keyGeometryCurves={keyGeometryCurves}
+              />
+            </div>
+            <div className="h-64" data-tour="lean-vs-steer">
+              <LeanVsSteerChart
                 setups={setups}
                 riderMassKg={riderParams.massKg}
                 comHeightM={riderParams.comHeightM}

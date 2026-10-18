@@ -105,12 +105,13 @@ interface SelectRowProps {
   value: string
   options: Array<{ value: string; label: string }>
   onChange: (value: string) => void
+  trailing?: React.ReactNode
 }
 
 /**
  * SelectRow — a labeled dropdown.
  */
-const SelectRow: React.FC<SelectRowProps> = ({ label, value, options, onChange }) => (
+const SelectRow: React.FC<SelectRowProps> = ({ label, value, options, onChange, trailing }) => (
   <div className="flex items-center gap-2 py-1">
     <label className="text-slate-300 text-xs w-36 flex-shrink-0">{label}</label>
     <select
@@ -124,6 +125,7 @@ const SelectRow: React.FC<SelectRowProps> = ({ label, value, options, onChange }
         </option>
       ))}
     </select>
+    {trailing}
   </div>
 )
 
@@ -217,6 +219,11 @@ interface ConfigPanelProps {
   /** Called when steering lean angle changes. */
   onSteeringLeanAngleChange: (deg: number) => void
   onLeanMotionChange: (motion: LeanMotion) => void
+  isSimulationPlaying: boolean
+  onSimulationPlayingChange: (playing: boolean) => void
+  /** Board speed magnitude for the birds-eye motion graph, in m/s. */
+  boardVelocityMs: number
+  onBoardVelocityChange: (velocityMs: number) => void
   /** Called when a preset is loaded (creates a new setup from preset). */
   onLoadPreset: (presetConfig: Omit<BoardSetupConfig, 'id' | 'name' | 'color'>, presetLabel: string) => void
   /** Called when the user clicks "Share current" to copy a shareable link. */
@@ -246,6 +253,10 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
   onRiderParamsChange,
   onSteeringLeanAngleChange,
   onLeanMotionChange,
+  isSimulationPlaying,
+  onSimulationPlayingChange,
+  boardVelocityMs,
+  onBoardVelocityChange,
   onLoadPreset,
   onShare,
 }) => {
@@ -484,19 +495,21 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
                         unit="mm"
                         onChange={v => updateFrontTruck(setup.id, { bushingMomentArm: v })}
                       />
-                      <div data-tour="roadside-bushing">
-                        <BushingEditor
-                          label="Roadside"
-                          bushing={setup.frontTruck.roadsideBushing}
-                          onChange={b => updateFrontTruck(setup.id, { roadsideBushing: b })}
-                        />
-                      </div>
-                      <div data-tour="boardside-bushing">
-                        <BushingEditor
-                          label="Boardside"
-                          bushing={setup.frontTruck.boardsideBushing}
-                          onChange={b => updateFrontTruck(setup.id, { boardsideBushing: b })}
-                        />
+                      <div data-tour="bushings">
+                        <div data-tour="roadside-bushing">
+                          <BushingEditor
+                            label="Roadside"
+                            bushing={setup.frontTruck.roadsideBushing}
+                            onChange={b => updateFrontTruck(setup.id, { roadsideBushing: b })}
+                          />
+                        </div>
+                        <div data-tour="boardside-bushing">
+                          <BushingEditor
+                            label="Boardside"
+                            bushing={setup.frontTruck.boardsideBushing}
+                            onChange={b => updateFrontTruck(setup.id, { boardsideBushing: b })}
+                          />
+                        </div>
                       </div>
 
                       {/* Rear truck */}
@@ -573,7 +586,7 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
           <SliderRow
             label="Max lean angle"
             value={riderParams.maxLeanAngle}
-            min={10}
+            min={0}
             max={30}
             step={1}
             unit="°"
@@ -590,9 +603,41 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
             options={[
               { value: 'manual', label: 'Manual' },
               { value: 'sinusoidal', label: 'Sinusoidal' },
+              { value: 'sinusoidal-5x', label: 'Sinusoidal 5x' },
               { value: 'trapezoidal', label: 'Trapezoidal' },
+              { value: 'trapezoidal-5x', label: 'Trapezoidal 5x' },
             ]}
             onChange={value => onLeanMotionChange(value as LeanMotion)}
+            trailing={
+              <button
+                type="button"
+                className="px-2 py-1 text-xs rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 whitespace-nowrap"
+                onClick={() => onSimulationPlayingChange(!isSimulationPlaying)}
+                aria-label={isSimulationPlaying ? 'Pause simulation' : 'Play simulation'}
+                title={isSimulationPlaying ? 'Pause simulation' : 'Play simulation'}
+              >
+                {isSimulationPlaying ? (
+                  <span aria-hidden="true" className="flex items-center justify-center gap-1 w-3 h-3">
+                    <span className="block w-1 h-3 bg-slate-200 rounded-sm" />
+                    <span className="block w-1 h-3 bg-slate-200 rounded-sm" />
+                  </span>
+                ) : (
+                  <span
+                    aria-hidden="true"
+                    className="block w-0 h-0 border-y-[6px] border-y-transparent border-l-[9px] border-l-slate-200 ml-0.5"
+                  />
+                )}
+              </button>
+            }
+          />
+          <SliderRow
+            label="Board velocity"
+            value={boardVelocityMs}
+            min={0}
+            max={8}
+            step={0.1}
+            unit="m/s"
+            onChange={onBoardVelocityChange}
           />
           <div data-tour="steering-angle-slider">
             <SliderRow

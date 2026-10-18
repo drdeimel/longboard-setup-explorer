@@ -48,6 +48,13 @@ const TourOverlay: React.FC<TourOverlayProps> = ({
   const isLastStep = currentStep === tour.steps.length - 1
   const isFirstStep = currentStep === 0
 
+  const findVisibleTarget = () => {
+    return Array.from(document.querySelectorAll(step?.targetSelector ?? '')).find((element) => {
+      const rect = element.getBoundingClientRect()
+      return rect.width > 0 && rect.height > 0
+    })
+  }
+
   // Find the target element and get its bounding rect
   useEffect(() => {
     if (!step?.targetSelector) return
@@ -56,7 +63,7 @@ const TourOverlay: React.FC<TourOverlayProps> = ({
     let isMounted = true
 
     const findTarget = () => {
-      const el = document.querySelector(step.targetSelector)
+      const el = findVisibleTarget()
       if (el && isMounted) {
         setTargetRect(el.getBoundingClientRect())
         // Scroll the target element into view smoothly
@@ -71,7 +78,7 @@ const TourOverlay: React.FC<TourOverlayProps> = ({
 
     // Update position on resize/scroll
     const handleResize = () => {
-      const el = document.querySelector(step.targetSelector)
+      const el = findVisibleTarget()
       if (el && isMounted) {
         setTargetRect(el.getBoundingClientRect())
       }
@@ -100,57 +107,81 @@ const TourOverlay: React.FC<TourOverlayProps> = ({
     const viewportHeight = window.innerHeight
     const margin = 16 // margin from viewport edges
 
-    // Calculate initial position based on step.position
     const { top: targetTop, left: targetLeft, width, height } = targetRect
-    const pos = step.position ?? 'bottom'
-    let top: number
-    let left: number
-    let transform: string
+    const preferredPosition = step.position ?? 'bottom'
+    const positions = [preferredPosition, 'bottom', 'right', 'left', 'top'].filter(
+      (position, index, all) => all.indexOf(position) === index,
+    )
+    const targetPadding = 8
 
-    switch (pos) {
-      case 'top':
-        top = targetTop - 12
-        left = targetLeft + width / 2
-        transform = 'translateX(-50%) translateY(-100%)'
-        break
-      case 'left':
-        top = targetTop + height / 2
-        left = targetLeft - 12
-        transform = 'translateY(-50%) translateX(-100%)'
-        break
-      case 'right':
-        top = targetTop + height / 2
-        left = targetLeft + width + 12
-        transform = 'translateY(-50%)'
-        break
-      case 'center':
-        top = targetTop + height / 2
-        left = targetLeft + width / 2
-        transform = 'translate(-50%, -50%)'
-        break
-      default: // bottom
-        top = targetTop + height + 12
-        left = targetLeft + width / 2
-        transform = 'translateX(-50%)'
+    const getTooltipBounds = (top: number, left: number, transform: string) => {
+      let x = left
+      let y = top
+      if (transform.includes('translateX(-50%)')) x -= tooltipRect.width / 2
+      if (transform.includes('translateX(-100%)')) x -= tooltipRect.width
+      if (transform.includes('translateY(-50%)')) y -= tooltipRect.height / 2
+      if (transform.includes('translateY(-100%)')) y -= tooltipRect.height
+      if (transform.includes('translate(-50%, -50%)')) {
+        x -= tooltipRect.width / 2
+        y -= tooltipRect.height / 2
+      }
+      return { left: x, top: y, right: x + tooltipRect.width, bottom: y + tooltipRect.height }
     }
 
-    // Ensure tooltip stays within horizontal bounds
-    if (left + tooltipRect.width > viewportWidth - margin) {
-      left = viewportWidth - tooltipRect.width - margin
-    }
-    if (left < margin) {
-      left = margin
+    const overlapsTarget = (bounds: ReturnType<typeof getTooltipBounds>) =>
+      bounds.left < targetRect.right + targetPadding &&
+      bounds.right > targetRect.left - targetPadding &&
+      bounds.top < targetRect.bottom + targetPadding &&
+      bounds.bottom > targetRect.top - targetPadding
+
+    let chosenPosition: { top: number; left: number; transform: string } | null = null
+
+    for (const position of positions) {
+      let top: number
+      let left: number
+      let transform: string
+
+      switch (position) {
+        case 'top':
+          top = targetTop - 12
+          left = targetLeft + width / 2
+          transform = 'translateX(-50%) translateY(-100%)'
+          break
+        case 'left':
+          top = targetTop + height / 2
+          left = targetLeft - 12
+          transform = 'translateY(-50%) translateX(-100%)'
+          break
+        case 'right':
+          top = targetTop + height / 2
+          left = targetLeft + width + 12
+          transform = 'translateY(-50%)'
+          break
+        case 'center':
+          top = targetTop + height / 2
+          left = targetLeft + width / 2
+          transform = 'translate(-50%, -50%)'
+          break
+        default:
+          top = targetTop + height + 12
+          left = targetLeft + width / 2
+          transform = 'translateX(-50%)'
+      }
+
+      let bounds = getTooltipBounds(top, left, transform)
+      if (bounds.left < margin) left += margin - bounds.left
+      if (bounds.right > viewportWidth - margin) left -= bounds.right - (viewportWidth - margin)
+      if (bounds.top < margin) top += margin - bounds.top
+      if (bounds.bottom > viewportHeight - margin) top -= bounds.bottom - (viewportHeight - margin)
+      bounds = getTooltipBounds(top, left, transform)
+
+      if (!overlapsTarget(bounds)) {
+        chosenPosition = { top, left, transform }
+        break
+      }
     }
 
-    // Ensure tooltip stays within vertical bounds
-    if (top + tooltipRect.height > viewportHeight - margin) {
-      top = viewportHeight - tooltipRect.height - margin
-    }
-    if (top < margin) {
-      top = margin
-    }
-
-    setTooltipPosition({ top, left, transform })
+    if (chosenPosition) setTooltipPosition(chosenPosition)
   }, [targetRect, step.position])
 
   // Keyboard navigation

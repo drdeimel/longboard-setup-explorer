@@ -21,8 +21,13 @@ UI and presentation domain.
 - `TopView` marks the current lean's finite ICR position with a blue point projected from the centralized turning-center result.
 - `TopView` renders four grey rotated wheel rectangles using shared wheel-rim positions, wheel diameter, wheel width, track width, and wheel offset.
 - `TopView` marks the center of moment with a white point computed as `rearRatio / (rearRatio + frontRatio + epsilon) * wheelbase`, using the larger front perpendicular leaf and the rear leaf at the opposite perpendicular angle.
+- `MotionTopView` renders the session-only birds-eye rigid-motion graph. Board motion is supplied in floor coordinates; viewport-center renormalization is supplied separately so the floor and board remain visually together.
+- `MotionTopView` rotates axle endpoints around each truck axle center, draws the axle through those endpoints, and uses the matching rolling/axle basis for wheel rectangles.
+- Motion trace samples record the active setup color; trace segments must retain their recorded historical color when the active configuration changes.
+- The motion graph viewport toggle switches between `Follow` and `Zoom-To-Fit`; the latter displays the complete currently retained trace.
+- The motion graph viewport toggle is rendered as an SVG overlay directly below the `Birds-eye Motion Trace` label.
 - The `ConfigPanel` enforces setup lifecycle rules: at least one setup must exist, deletion is disabled at 1 setup, and duplication creates a deep copy with a new auto-generated name and color.
-- Chart Controls expose the `Lean motion` selector. Manual mode enables slider and front-view drag input; automatic modes drive the shared lean used by diagrams and charts.
+- Chart Controls expose the `Lean motion` selector and simulation play/pause control. Manual mode enables slider and front-view drag input; automatic modes drive the shared lean used by diagrams and charts. Pause freezes the shared simulation clock and motion view.
 - `TourOverlay` renders the guided tour UI with backdrop, highlight, and tooltip. Transition timing between tour stops is controlled via CSS transitions.
 - `TourSelector` provides the UI for selecting and starting available tours.
 

@@ -333,16 +333,18 @@ const SideView: React.FC<SideViewProps> = ({
       </text>
 
       {/* Pivot axis line */}
-      <line
-        x1={svgAxNeg}
-        y1={svgAyNeg}
-        x2={svgAxPos}
-        y2={svgAyPos}
-        stroke={color}
-        strokeWidth={2}
-        strokeDasharray="6 3"
-        opacity={0.85}
-      />
+      <g data-tour="side-view-pivot-axis">
+        <line
+          x1={svgAxNeg}
+          y1={svgAyNeg}
+          x2={svgAxPos}
+          y2={svgAyPos}
+          stroke={color}
+          strokeWidth={2}
+          strokeDasharray="6 3"
+          opacity={0.85}
+        />
+      </g>
 
       {/* Rake indicator: dashed line from origin to closest axis point */}
       {Math.abs(truck.rake) > 0.5 && (

@@ -306,7 +306,7 @@ const TopView: React.FC<TopViewProps> = ({
 
       {/* Title */}
       <text x={8} y={18} fill={UI_TEXT_PRIMARY} fontSize={11} fontFamily="monospace">
-        Top View (XZ) — Pumping Gear Ratio + Turning Arc
+        Top View (XZ) — Lever/Transmission Windrose + Turning Arc
       </text>
 
       {/* Board outline — drawn once for the reference setup, extended by 60mm on both sides */}
@@ -350,7 +350,11 @@ const TopView: React.FC<TopViewProps> = ({
 
       <g clipPath="url(#topview-clip)">
       {windroses.map(windrose => (
-        <g key={windrose.id} aria-label={`${windrose.id} pumping gear ratio`}>
+        <g
+          key={windrose.id}
+          aria-label={`${windrose.id} pumping gear ratio`}
+          data-tour={windrose.id === 'front' ? 'front-lever-windrose' : undefined}
+        >
           {windrose.samples.map(sample => {
             const isPerpendicular = sample.appliedAngleDeg === 90 || sample.appliedAngleDeg === 270
             return (
@@ -369,7 +373,7 @@ const TopView: React.FC<TopViewProps> = ({
       ))}
 
       {centerOfMoment && (
-        <g aria-label="Center of Moment for Pumping">
+        <g aria-label="Center of Moment for Rotational Pumping">
           <circle
             cx={centerOfMoment[0]}
             cy={centerOfMoment[1]}

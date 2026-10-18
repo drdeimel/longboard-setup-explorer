@@ -19,7 +19,7 @@ export const TOURS: TourDefinition[] = [
         targetSelector: '[data-tour="header-title"]',
         title: 'Welcome!',
         description:
-          'This is the Longboard Truck Geometry Explorer — your interactive tool for understanding how truck geometry affects steering behavior.',
+          'This is the Longboard Setup Explorer — your interactive tool for understanding how truck geometry affects steering behavior.',
         position: 'bottom',
       },
       {
@@ -33,21 +33,21 @@ export const TOURS: TourDefinition[] = [
         targetSelector: '[data-tour="side-view"]',
         title: 'Side View',
         description:
-          'The side view shows a cross-section of your front truck. Here you can see the truck geometry when the truck is at 0° \n\nNotice the pivot axis angle (α), rake offset, trailing distance, and the effective rotation center. These are the key geometric parameters that determine how your truck steers.',
+          'The side view shows a cross-section of your front truck at the current lean angle. Notice the pivot axis angle (α), rake offset, trailing distance, and the effective rotation center. These are key geometric parameters that determine how your truck steers.',
         position: 'top',
       },
       {
         targetSelector: '[data-tour="front-view"]',
         title: 'Front View',
         description:
-          'The front view lets you visualize how the truck leans and steers.\n\n Try dragging the green dot! The colored lines indicate the pivot axis at different lean angles. You can see how the hanger rotates around the pivot axis as the board leans.',
+          'The front view lets you visualize how the truck leans and steers. In Manual lean motion, drag the colored dot on the board to change the lean angle. The board, hanger, and wheels update as the board leans.',
         position: 'top',
       },
       {
         targetSelector: '[data-tour="top-view"]',
         title: 'Top View',
         description:
-          'The top view shows you where the Instantaneous Center of Rotation (ICR) — the point around which the board turns — is, depending on the lean. Notice that it moves depending on pivot angles and rake! Play with the rear truck settings to see the effect.',
+          'The top view shows the pumping gear ratio windroses, turning arc, and the Instantaneous Center of Rotation (ICR) — the point around which the board turns — for the current lean. The ICR moves depending on pivot angles and rake. Play with the rear truck settings to see the effect.',
         position: 'top',
       },
       {
@@ -75,12 +75,12 @@ export const TOURS: TourDefinition[] = [
         targetSelector: '[data-tour="side-view-rotation-center"]',
         title: 'Center of Rotation',
         description:
-          'The green dot in the side view indicates the center of rotation for both your lean and turn. It is the intersection of the pivot axis and the hanger\'s vertical rotation axis.',
+          'The colored dot in the side view indicates the center of rotation for both your lean and turn. It is the intersection of the pivot axis and the hanger\'s vertical rotation axis.',
         position: 'right',
       },
       {
         targetSelector: '[data-tour="front-view-inv-pendulum"]',
-        title: 'Height of inverse pednulum',
+        title: 'Height of inverse pendulum',
         description:
           'Its distance to the board surface determines the feel of a setup. It creates an "inverse pendulum".\n\n Long arm: "Divey" feel (TKPs, Surfskate trucks). \n\n Short arm: "Low Deck" feel (positive-rake RKP).',
         position: 'right',
@@ -89,20 +89,6 @@ export const TOURS: TourDefinition[] = [
         title: 'Contributing factors',
         description:
           'Baseplate height and risers influence the inverse pendulum arm. But also rake, depending on the angle of the pivot axis.\n\n Try changing those values and see their effect!',
-        position: 'right',
-      },
-    ],
-  },
-  {
-    id: 'trail',
-    name: 'Trail',
-    description: 'Lively or Stable?',
-    steps: [
-      {
-        targetSelector: '[data-tour="side-view-trailing"]',
-        title: 'Trail',
-        description:
-          "The distance between the ground contact of the wheels and the intersection of pivot axis and  ground is the trail. It determines how much your hanger straightens itself, even without bushings.\n\nLarge trail: self-stabilizing feedback that increases with velocity.\n\n No trail: Lively and agile setup that doesn't fight your steering inputs.",
         position: 'right',
       },
     ],
@@ -154,7 +140,7 @@ export const TOURS: TourDefinition[] = [
         position: 'top',
       },
       {
-        targetSelector: '[data-tour="roadside-bushing"], [data-tour="boardside-bushing"]',
+        targetSelector: '[data-tour="bushings"]',
         title: 'Road- & Boardside bushings',
         description:
           'Bushings modify your board\'s stiffness in several ways.\n\nDurometer determines how hard or soft the bushing rubber is on average.\n\nBushing shape determines how stiffness changes with lean - cones will be much softer close to 0°, while barrels feel similar at multiple angles. Taller bushings push the inevitable compressive stiffening to larger lean angles.',
@@ -179,6 +165,34 @@ export const TOURS: TourDefinition[] = [
         title: 'Inverse Pendulum height',
         description:
           "Finally, the inverse pendulum height also affects stiffness - by increasing or reducing the lever for the rider's weight.",
+        position: 'right',
+      },
+    ],
+  },
+  {
+    id: 'how-to-switch-gears',
+    name: 'How to switch gears',
+    description: 'Learn how pivot angle and lean change your pumping gear',
+    steps: [
+      {
+        targetSelector: '[data-tour="side-view-pivot-axis"]',
+        title: 'Pivot axis angle',
+        description:
+          'The pivot axis acts as your transmission box. The higher the angle, the lower is your "gear", making it easier to propel yourself forward. But it also lowers the ceiling for how fast you can pump.',
+        position: 'right',
+      },
+      {
+        targetSelector: '[data-tour="steering-angle-slider"]',
+        title: 'Steering chart lean',
+        description:
+          'Lean is your gearshift lever: Lean your board more at each turn, and you will have a higher ratio between applied sideways force and the resulting forward propulsive force. With high lean, you have a "lower gear" and find it easier to pump, especially at low speeds.\n\nBe aware though, the same ratio applies to velocities but in reverse: More lean will also translate your forward velocity into more sideways velocity. So to keep wiggle frequency manageable, the faster you go the less you lean your board.',
+        position: 'right',
+      },
+      {
+        targetSelector: '[data-tour="front-lever-windrose"]',
+        title: 'Front truck lever windrose',
+        description:
+          'This windrose visualizes the amount of forward propulsive force generated by a force applied in the direction of the respective windrose leaf.\nThe larger the leaf, the more propulsive power you can create with a fixed/limited (muscle) force.\n\nThe two perpendicular leaves are especially interesting: These tell you how fast your board moves sideways for the given lean. They also tell you the multiplier from sideways to propulsive force.\n\nThe catch? The total sum of applied forces needs to cancel or else you will fall off your board. You have to figure out a clever combination of force and lean oscillations that gives you a nonzero forward force average.',
         position: 'right',
       },
     ],
