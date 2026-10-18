@@ -39,6 +39,7 @@ import { useKeyGeometryCurves } from './geometry/keyGeometryCache'
 import { TOURS } from './tours/tourDefinitions'
 import TourOverlay from './components/TourOverlay'
 import TourSelector from './components/TourSelector'
+import { getLeanWaveform, type LeanMotion } from './models/leanWaveforms'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Default state
@@ -100,6 +101,7 @@ function buildInitialState(): {
   activeSetupId: string
   riderParams: RiderParams
   steeringLeanAngleDeg: number
+  leanMotion: LeanMotion
 } {
   const persisted = loadState()
   if (persisted) return persisted
@@ -110,6 +112,7 @@ function buildInitialState(): {
     activeSetupId: defaultSetup.id,
     riderParams: DEFAULT_RIDER_PARAMS,
     steeringLeanAngleDeg: 0,
+    leanMotion: 'manual',
   }
 }
 
@@ -163,6 +166,16 @@ const App: React.FC = () => {
   const [steeringLeanAngleDeg, setSteeringLeanAngleDeg] = useState<number>(
     initial.steeringLeanAngleDeg,
   )
+  const [leanMotion, setLeanMotion] = useState<LeanMotion>(initial.leanMotion)
+
+  const handleManualLeanChange = useCallback(
+    (angleDeg: number) => {
+      setSteeringLeanAngleDeg(
+        getLeanWaveform('manual').evaluate(0, -riderParams.maxLeanAngle, riderParams.maxLeanAngle, angleDeg),
+      )
+    },
+    [riderParams.maxLeanAngle],
+  )
 
   // ── URL shared state confirmation dialog ──────────────────────────────────
   const [pendingUrlState] = useState<UrlState | null>(() => readStateFromUrl())
@@ -191,6 +204,7 @@ const App: React.FC = () => {
     // Apply shared rider params and lean angle
     setRiderParams(pendingUrlState.riderParams)
     setSteeringLeanAngleDeg(pendingUrlState.steeringLeanAngleDeg)
+    setLeanMotion(pendingUrlState.leanMotion)
     // Switch to the first shared setup if it exists
     if (pendingUrlState.setups.length > 0) {
       const firstName = pendingUrlState.setups[0].name
@@ -260,7 +274,7 @@ const App: React.FC = () => {
       clearTimeout(saveTimerRef.current)
     }
     saveTimerRef.current = window.setTimeout(() => {
-      saveState({ setups, riderParams, activeSetupId, steeringLeanAngleDeg })
+      saveState({ setups, riderParams, activeSetupId, steeringLeanAngleDeg, leanMotion })
     }, 2000)
 
     return () => {
@@ -268,7 +282,24 @@ const App: React.FC = () => {
         clearTimeout(saveTimerRef.current)
       }
     }
-  }, [setups, activeSetupId, riderParams, steeringLeanAngleDeg])
+  }, [setups, activeSetupId, riderParams, steeringLeanAngleDeg, leanMotion])
+
+  useEffect(() => {
+    if (leanMotion === 'manual') return
+
+    const waveform = getLeanWaveform(leanMotion)
+    const startedAt = performance.now()
+    let frame = 0
+    const animate = (timestamp: number) => {
+      const elapsedSeconds = (timestamp - startedAt) / 1000
+      setSteeringLeanAngleDeg(
+        waveform.evaluate(elapsedSeconds, -riderParams.maxLeanAngle, riderParams.maxLeanAngle, steeringLeanAngleDeg),
+      )
+      frame = requestAnimationFrame(animate)
+    }
+    frame = requestAnimationFrame(animate)
+    return () => cancelAnimationFrame(frame)
+  }, [leanMotion, riderParams.maxLeanAngle])
 
   // ── Derived ───────────────────────────────────────────────────────────────
   const activeSetup = setups.find(s => s.id === activeSetupId) ?? setups[0]
@@ -383,10 +414,10 @@ const App: React.FC = () => {
 
   // ── Share handler ──────────────────────────────────────────────────────────
   const handleShare = useCallback(() => {
-    const state: UrlState = { setups, riderParams, activeSetupId, steeringLeanAngleDeg }
+    const state: UrlState = { setups, riderParams, activeSetupId, steeringLeanAngleDeg, leanMotion }
     const url = buildShareUrl(state)
     navigator.clipboard.writeText(url)
-  }, [setups, riderParams, activeSetupId, steeringLeanAngleDeg])
+  }, [setups, riderParams, activeSetupId, steeringLeanAngleDeg, leanMotion])
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
@@ -454,12 +485,14 @@ const App: React.FC = () => {
             activeSetupId={activeSetupId}
             riderParams={riderParams}
             steeringLeanAngleDeg={steeringLeanAngleDeg}
+            leanMotion={leanMotion}
             onSetupChange={handleSetupChange}
             onSetupDuplicate={handleSetupDuplicate}
             onSetupDelete={handleSetupDelete}
             onActiveSetupChange={setActiveSetupId}
             onRiderParamsChange={setRiderParams}
-            onSteeringLeanAngleChange={setSteeringLeanAngleDeg}
+            onSteeringLeanAngleChange={handleManualLeanChange}
+            onLeanMotionChange={setLeanMotion}
             onLoadPreset={handleLoadPreset}
             onShare={handleShare}
           />
@@ -501,7 +534,7 @@ const App: React.FC = () => {
                 keyGeometryCurves={keyGeometryCurves}
                 activeSetupId={activeSetupId}
                 leanAngleDeg={steeringLeanAngleDeg}
-                onLeanAngleChange={setSteeringLeanAngleDeg}
+                 onLeanAngleChange={leanMotion === 'manual' ? handleManualLeanChange : undefined}
                 maxLeanAngle={riderParams.maxLeanAngle}
               />
             </div>

@@ -18,6 +18,7 @@ import type { TruckConfig } from '../models/TruckConfig'
 import type { RearTruckConfig } from '../models/RearTruckConfig'
 import type { BushingConfig } from '../models/BushingConfig'
 import { LIBRARY, getSetupFromLibraryEntry } from '../models/truckLibrary'
+import type { LeanMotion } from '../models/leanWaveforms'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Color palette for auto-assigning setup colors
@@ -58,12 +59,13 @@ interface SliderRowProps {
   step: number
   unit?: string
   onChange: (value: number) => void
+  disabled?: boolean
 }
 
 /**
  * SliderRow — a labeled slider with numeric display and editable input field.
  */
-const SliderRow: React.FC<SliderRowProps> = ({ label, value, min, max, step, unit, onChange }) => (
+const SliderRow: React.FC<SliderRowProps> = ({ label, value, min, max, step, unit, onChange, disabled = false }) => (
   <div className="flex items-center gap-2 py-1">
     <label className="text-slate-300 text-xs w-36 flex-shrink-0">{label}</label>
     <input
@@ -74,6 +76,7 @@ const SliderRow: React.FC<SliderRowProps> = ({ label, value, min, max, step, uni
       value={value}
       className="flex-1 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer min-w-[80px] w-full"
       style={{ accentColor: '#94a3b8' }}
+      disabled={disabled}
       onChange={e => onChange(Number(e.target.value))}
     />
     <input
@@ -89,6 +92,7 @@ const SliderRow: React.FC<SliderRowProps> = ({ label, value, min, max, step, uni
           onChange(num)
         }
       }}
+      disabled={disabled}
     />
     <span className="text-slate-300 text-xs w-6 flex-shrink-0">
       {unit ?? ''}
@@ -199,6 +203,7 @@ interface ConfigPanelProps {
   riderParams: RiderParams
   /** Lean angle shown in SteeringMomentChart (editable here). */
   steeringLeanAngleDeg: number
+  leanMotion: LeanMotion
   /** Called when a setup's parameters change. */
   onSetupChange: (updated: BoardSetupConfig) => void
   /** Called when a setup is duplicated. */
@@ -211,6 +216,7 @@ interface ConfigPanelProps {
   onRiderParamsChange: (params: RiderParams) => void
   /** Called when steering lean angle changes. */
   onSteeringLeanAngleChange: (deg: number) => void
+  onLeanMotionChange: (motion: LeanMotion) => void
   /** Called when a preset is loaded (creates a new setup from preset). */
   onLoadPreset: (presetConfig: Omit<BoardSetupConfig, 'id' | 'name' | 'color'>, presetLabel: string) => void
   /** Called when the user clicks "Share current" to copy a shareable link. */
@@ -232,12 +238,14 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
   activeSetupId,
   riderParams,
   steeringLeanAngleDeg,
+  leanMotion,
   onSetupChange,
   onSetupDuplicate,
   onSetupDelete,
   onActiveSetupChange,
   onRiderParamsChange,
   onSteeringLeanAngleChange,
+  onLeanMotionChange,
   onLoadPreset,
   onShare,
 }) => {
@@ -576,6 +584,16 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
         {/* ── Chart Controls ── */}
         <div className="px-3 py-3">
           <p className="text-xs text-slate-300 uppercase tracking-wide mb-2">Chart Controls</p>
+          <SelectRow
+            label="Lean motion"
+            value={leanMotion}
+            options={[
+              { value: 'manual', label: 'Manual' },
+              { value: 'sinusoidal', label: 'Sinusoidal' },
+              { value: 'trapezoidal', label: 'Trapezoidal' },
+            ]}
+            onChange={value => onLeanMotionChange(value as LeanMotion)}
+          />
           <div data-tour="steering-angle-slider">
             <SliderRow
               label="Steering chart lean"
@@ -584,6 +602,7 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
               max={riderParams.maxLeanAngle}
               step={1}
               unit="°"
+              disabled={leanMotion !== 'manual'}
               onChange={onSteeringLeanAngleChange}
             />
           </div>

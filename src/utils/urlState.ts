@@ -7,6 +7,7 @@
 
 import type { BoardSetupConfig } from '../models/BoardSetupConfig'
 import type { RiderParams } from '../components/ConfigPanel'
+import type { LeanMotion } from '../models/leanWaveforms'
 
 /** The shape of the state encoded in the URL. */
 export interface UrlState {
@@ -14,6 +15,7 @@ export interface UrlState {
   riderParams: RiderParams
   activeSetupId: string
   steeringLeanAngleDeg: number
+  leanMotion: LeanMotion
 }
 
 /**
@@ -42,7 +44,7 @@ export function deserializeState(encoded: string): UrlState | null {
     const parsed = JSON.parse(json)
 
     if (!isValidUrlState(parsed)) return null
-    return parsed
+    return { ...parsed, leanMotion: parsed.leanMotion ?? 'manual' }
   } catch {
     return null
   }
@@ -74,6 +76,7 @@ function isValidUrlState(value: unknown): value is UrlState {
   if (!Array.isArray(v['setups']) || v['setups'].length === 0) return false
   if (typeof v['riderParams'] !== 'object' || v['riderParams'] === null) return false
   if (typeof v['activeSetupId'] !== 'string') return false
-  if (typeof v['steeringLeanAngleDeg'] !== 'number') return false
+   if (typeof v['steeringLeanAngleDeg'] !== 'number') return false
+   if (v['leanMotion'] !== undefined && v['leanMotion'] !== 'manual' && v['leanMotion'] !== 'sinusoidal' && v['leanMotion'] !== 'trapezoidal') return false
   return true
 }

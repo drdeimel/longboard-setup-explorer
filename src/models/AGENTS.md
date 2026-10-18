@@ -10,6 +10,7 @@ Data modeling domain.
 - All configuration state must be defined here with strict TypeScript interfaces.
 - Interfaces must be immutable in practice; updates should produce new objects.
 - Default values and presets should be defined alongside or near these models.
+- Lean motion modes implement the `LeanWaveform` interface so manual and animated lean sources share one extensible contract.
 
 ## Work Guidance
 - Use discriminated unions for variant configurations (e.g., `single-pivot` vs `dual-pivot` trucks).

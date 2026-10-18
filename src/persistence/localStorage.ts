@@ -13,6 +13,7 @@
 
 import type { BoardSetupConfig } from '../models/BoardSetupConfig'
 import type { RiderParams } from '../components/ConfigPanel'
+import type { LeanMotion } from '../models/leanWaveforms'
 
 /** Current storage format version. Bump when state shape changes incompatibly. */
 const STORAGE_VERSION = 2
@@ -27,6 +28,7 @@ interface PersistedAppState {
   riderParams: RiderParams
   activeSetupId: string
   steeringLeanAngleDeg: number
+  leanMotion: LeanMotion
 }
 
 /**
@@ -42,6 +44,7 @@ export function saveState(state: {
   riderParams: RiderParams
   activeSetupId: string
   steeringLeanAngleDeg: number
+  leanMotion: LeanMotion
 }): void {
   try {
     const payload: PersistedAppState = {
@@ -75,6 +78,7 @@ export function loadState(): {
   riderParams: RiderParams
   activeSetupId: string
   steeringLeanAngleDeg: number
+  leanMotion: LeanMotion
 } | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
@@ -88,6 +92,7 @@ export function loadState(): {
       riderParams: parsed.riderParams,
       activeSetupId: parsed.activeSetupId,
       steeringLeanAngleDeg: parsed.steeringLeanAngleDeg,
+      leanMotion: parsed.leanMotion ?? 'manual',
     }
   } catch (err) {
     console.warn('[persistence] Failed to load state:', err)
@@ -113,6 +118,7 @@ function isPersistedAppState(value: unknown): value is PersistedAppState {
   if (typeof v['riderParams'] !== 'object' || v['riderParams'] === null) return false
   if (typeof v['activeSetupId'] !== 'string') return false
   if (typeof v['steeringLeanAngleDeg'] !== 'number') return false
+  if (v['leanMotion'] !== 'manual' && v['leanMotion'] !== 'sinusoidal' && v['leanMotion'] !== 'trapezoidal') return false
 
   const rp = v['riderParams'] as Record<string, unknown>
   if (typeof rp['massKg'] !== 'number') return false
