@@ -20,6 +20,7 @@ UI and presentation domain.
 - `TopView` retains the active-lean turning arc and turning-radius label while omitting the full ICR locus lines.
 - `TopView` marks the current lean's finite ICR position with a blue point projected from the centralized turning-center result.
 - `TopView` renders four grey rotated wheel rectangles using shared wheel-rim positions, wheel diameter, wheel width, track width, and wheel offset.
+- The wheel-width control is rendered immediately below wheel diameter and drives wheel width in `FrontView`, `SideView`, `TopView`, and `MotionTopView`.
 - `TopView` marks the center of moment with a white point computed as `rearRatio / (rearRatio + frontRatio + epsilon) * wheelbase`, using the larger front perpendicular leaf and the rear leaf at the opposite perpendicular angle.
 - `MotionTopView` renders the session-only birds-eye rigid-motion graph. Board motion is supplied in floor coordinates; viewport-center renormalization is supplied separately so the floor and board remain visually together.
 - `MotionTopView` rotates axle endpoints around each truck axle center, draws the axle through those endpoints, and uses the matching rolling/axle basis for wheel rectangles.

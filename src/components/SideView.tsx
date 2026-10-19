@@ -24,7 +24,7 @@ import { computePivotAxis, boardSurfaceHeight } from '../geometry/pivotAxis'
 import { computeTruckGeometry } from '../geometry/truckGeometry'
 import { computeSideViewMotion, projectWheelRimToSideX } from '../geometry/sideViewMotion'
 import { computeWheelAxleZPositions, computeWheelRimZPositions } from '../geometry/wheelRimPositions'
-import { DISPLAY_GEOMETRY_WIDTH_MM, DISPLAY_WHEEL_OFFSET_MM, DISPLAY_WHEEL_WIDTH_MM } from '../physics/keyGeometryDataSet'
+import { DISPLAY_GEOMETRY_WIDTH_MM, DISPLAY_WHEEL_OFFSET_MM } from '../physics/keyGeometryDataSet'
 import { UI_TEXT_MUTED, UI_TEXT_PRIMARY } from '../theme/uiColors'
 
 /** Props for the SideView component. */
@@ -166,7 +166,7 @@ const SideView: React.FC<SideViewProps> = ({
   const rimZ = computeWheelRimZPositions(
     truck.trackWidth - 2 * DISPLAY_WHEEL_OFFSET_MM,
     DISPLAY_WHEEL_OFFSET_MM,
-    DISPLAY_WHEEL_WIDTH_MM,
+    truck.wheelWidth,
   )
   const steerRad = (sideMotion.steerAngleDeg * Math.PI) / 180
   const wheelRimX = (z: number): number => projectWheelRimToSideX(

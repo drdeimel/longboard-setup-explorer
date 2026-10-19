@@ -4,7 +4,7 @@
  * Provides:
  * - Setup list: color swatch, editable name, duplicate button, delete button
  * - Per-setup parameter sliders (front truck full set, rear truck minimal, wheelbase)
- * - Global rider parameters: rider mass, CoM height
+ * - Global rider and board parameters
  * - Library instantiation: create setups from URL-based library entries
  *
  * Invariants enforced here (per AGENTS.md §5):
@@ -451,6 +451,15 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
                         unit="mm"
                         onChange={v => updateFrontTruck(setup.id, { baseplateToBoard: v })}
                       />
+                      <SliderRow
+                        label="Axle Width"
+                        value={setup.frontTruck.axleWidth ?? (setup.frontTruck.trackWidth - 24) / 2}
+                        min={80}
+                        max={240}
+                        step={1}
+                        unit="mm"
+                        onChange={v => updateFrontTruck(setup.id, { axleWidth: v, trackWidth: v + 2 * (setup.frontTruck.wheelOffset ?? 0) + 24 })}
+                      />
                       {/* Wheels */}
                       <p className="text-slate-300 text-xs font-bold text-center mt-3 mb-1">
                         Wheels
@@ -465,13 +474,13 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
                         onChange={v => updateFrontTruck(setup.id, { wheelDiameter: v })}
                       />
                       <SliderRow
-                        label="Axle Width"
-                        value={setup.frontTruck.axleWidth ?? (setup.frontTruck.trackWidth - 24) / 2}
-                        min={80}
-                        max={240}
+                        label="Wheel Width"
+                        value={setup.frontTruck.wheelWidth}
+                        min={40}
+                        max={65}
                         step={1}
                         unit="mm"
-                        onChange={v => updateFrontTruck(setup.id, { axleWidth: v, trackWidth: v + 2 * (setup.frontTruck.wheelOffset ?? 0) + 24 })}
+                        onChange={v => updateFrontTruck(setup.id, { wheelWidth: v })}
                       />
                       <SliderRow
                         label="Wheel Offset"
@@ -517,15 +526,6 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
                         Rear Truck:
                       </p>
                       <SliderRow
-                        label="Wheel Base"
-                        value={setup.wheelbase}
-                        min={400}
-                        max={1100}
-                        step={5}
-                        unit="mm"
-                        onChange={v => onSetupChange({ ...setup, wheelbase: v })}
-                      />
-                      <SliderRow
                         label="Pivot axis angle α"
                         value={setup.rearTruck.pivotAxisAngle}
                         min={1}
@@ -551,9 +551,9 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
           </div>
         </div>
 
-        {/* ── Global Rider Parameters ── */}
+        {/* ── Rider & Board Parameters ── */}
         <div className="px-3 py-3 border-b border-slate-800">
-          <p className="text-xs text-slate-300 uppercase tracking-wide mb-2">Rider (Global)</p>
+          <p className="text-xs text-slate-300 uppercase tracking-wide mb-2">Rider &amp; Board</p>
           <div data-tour="rider-mass">
             <SliderRow
               label="Mass"
@@ -582,6 +582,18 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
             step={1}
             unit="mm"
             onChange={v => onRiderParamsChange({ ...riderParams, boardWidthMm: v })}
+          />
+          <SliderRow
+            label="Wheel Base"
+            value={setups.find(setup => setup.id === activeSetupId)?.wheelbase ?? setups[0]?.wheelbase ?? 0}
+            min={400}
+            max={1100}
+            step={5}
+            unit="mm"
+            onChange={v => {
+              const activeSetup = setups.find(setup => setup.id === activeSetupId)
+              if (activeSetup) onSetupChange({ ...activeSetup, wheelbase: v })
+            }}
           />
           <SliderRow
             label="Max lean angle"
@@ -641,7 +653,7 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
           />
           <div data-tour="steering-angle-slider">
             <SliderRow
-              label="Steering chart lean"
+              label="Selected Lean"
               value={steeringLeanAngleDeg}
               min={-riderParams.maxLeanAngle}
               max={riderParams.maxLeanAngle}

@@ -18,7 +18,7 @@ import type { BoardSetupConfig } from '../models/BoardSetupConfig'
 import { computePositivePropulsionWindrose, type PropulsionWindroseSample } from '../geometry/propulsionWindrose'
 import { computeWheelRimZPositions } from '../geometry/wheelRimPositions'
 import type { KeyGeometryResult } from '../physics/keyGeometryDataSet'
-import { DISPLAY_WHEEL_OFFSET_MM, DISPLAY_WHEEL_WIDTH_MM } from '../physics/keyGeometryDataSet'
+import { DISPLAY_WHEEL_OFFSET_MM } from '../physics/keyGeometryDataSet'
 import { UI_TEXT_MUTED, UI_TEXT_PRIMARY, UI_TEXT_SECONDARY } from '../theme/uiColors'
 
 /** Props for the TopView component. */
@@ -86,6 +86,7 @@ function wheelRectanglePoints(
   centerZ: number,
   steerAngleDeg: number,
   wheelDiameterMm: number,
+  wheelWidthMm: number,
   toSVG: (x: number, z: number) => [number, number],
 ): string {
   const steerRad = (steerAngleDeg * Math.PI) / 180
@@ -94,7 +95,7 @@ function wheelRectanglePoints(
   const wheelCenterX = axleX + axle[0] * centerZ
   const wheelCenterZ = axle[1] * centerZ
   const halfLength = wheelDiameterMm / 2
-  const halfWidth = DISPLAY_WHEEL_WIDTH_MM / 2
+  const halfWidth = wheelWidthMm / 2
   const corners = [
     [wheelCenterX + rolling[0] * halfLength + axle[0] * halfWidth, wheelCenterZ + rolling[1] * halfLength + axle[1] * halfWidth],
     [wheelCenterX - rolling[0] * halfLength + axle[0] * halfWidth, wheelCenterZ - rolling[1] * halfLength + axle[1] * halfWidth],
@@ -238,12 +239,12 @@ const TopView: React.FC<TopViewProps> = ({
   const frontWheelRims = computeWheelRimZPositions(
     refSetup.frontTruck.trackWidth,
     wheelOffsetMm,
-    DISPLAY_WHEEL_WIDTH_MM,
+    refSetup.frontTruck.wheelWidth,
   )
   const rearWheelRims = computeWheelRimZPositions(
     refSetup.frontTruck.trackWidth,
     wheelOffsetMm,
-    DISPLAY_WHEEL_WIDTH_MM,
+    refSetup.frontTruck.wheelWidth,
   )
   const frontLeftWheelZ = (frontWheelRims.leftOuterZ + frontWheelRims.leftInnerZ) / 2
   const frontRightWheelZ = (frontWheelRims.rightInnerZ + frontWheelRims.rightOuterZ) / 2
@@ -322,10 +323,10 @@ const TopView: React.FC<TopViewProps> = ({
       />
 
       <g fill="#475569" fillOpacity={0.9} stroke="#64748b" strokeWidth={1}>
-        <polygon points={wheelRectanglePoints(0, frontLeftWheelZ, windroses[0]?.steerAngleDeg ?? 0, refSetup.frontTruck.wheelDiameter, toSVG)} />
-        <polygon points={wheelRectanglePoints(0, frontRightWheelZ, windroses[0]?.steerAngleDeg ?? 0, refSetup.frontTruck.wheelDiameter, toSVG)} />
-        <polygon points={wheelRectanglePoints(refSetup.wheelbase, rearLeftWheelZ, windroses[1]?.steerAngleDeg ?? 0, refSetup.frontTruck.wheelDiameter, toSVG)} />
-        <polygon points={wheelRectanglePoints(refSetup.wheelbase, rearRightWheelZ, windroses[1]?.steerAngleDeg ?? 0, refSetup.frontTruck.wheelDiameter, toSVG)} />
+        <polygon points={wheelRectanglePoints(0, frontLeftWheelZ, windroses[0]?.steerAngleDeg ?? 0, refSetup.frontTruck.wheelDiameter, refSetup.frontTruck.wheelWidth, toSVG)} />
+        <polygon points={wheelRectanglePoints(0, frontRightWheelZ, windroses[0]?.steerAngleDeg ?? 0, refSetup.frontTruck.wheelDiameter, refSetup.frontTruck.wheelWidth, toSVG)} />
+        <polygon points={wheelRectanglePoints(refSetup.wheelbase, rearLeftWheelZ, windroses[1]?.steerAngleDeg ?? 0, refSetup.frontTruck.wheelDiameter, refSetup.frontTruck.wheelWidth, toSVG)} />
+        <polygon points={wheelRectanglePoints(refSetup.wheelbase, rearRightWheelZ, windroses[1]?.steerAngleDeg ?? 0, refSetup.frontTruck.wheelDiameter, refSetup.frontTruck.wheelWidth, toSVG)} />
       </g>
       
       {/* Side lines at actual track width */}

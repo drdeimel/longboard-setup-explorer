@@ -16,6 +16,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import type { BoardSetupConfig } from './models/BoardSetupConfig'
+import { DEFAULT_WHEEL_WIDTH_MM } from './models/TruckConfig'
 import { DEFAULT_MAX_LEAN } from './models/BoardSetupConfig'
 import ConfigPanel, {
   type RiderParams,
@@ -90,6 +91,7 @@ function buildDefaultSetup(): BoardSetupConfig {
         axleToBaseplateDistance: 38,
         baseplateToBoard: 4,
         wheelDiameter: 150,
+        wheelWidth: DEFAULT_WHEEL_WIDTH_MM,
         trackWidth: 218,
         axleWidth: 170,
         wheelOffset: 12,
@@ -630,10 +632,6 @@ const App: React.FC = () => {
 
         {/* ── Right: Diagrams + Charts ── */}
         <main className="order-3 md:order-3 flex-1 overflow-y-auto p-4 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-medium text-gray-200 ml-1">Truck Diagrams</h2>
-          </div>
-
           {/* Row 1: Side/Front SVG diagrams */}
           <div ref={diagramsRowRef} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Side View - hidden on mobile (shown above), shown on desktop */}

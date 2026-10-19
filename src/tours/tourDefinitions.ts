@@ -183,7 +183,7 @@ export const TOURS: TourDefinition[] = [
       },
       {
         targetSelector: '[data-tour="steering-angle-slider"]',
-        title: 'Steering chart lean',
+        title: 'Selected Lean',
         description:
           'Lean is your gearshift lever: Lean your board more at each turn, and you will have a higher ratio between applied sideways force and the resulting forward propulsive force. With high lean, you have a "lower gear" and find it easier to pump, especially at low speeds.\n\nBe aware though, the same ratio applies to velocities but in reverse: More lean will also translate your forward velocity into more sideways velocity. So to keep wiggle frequency manageable, the faster you go the less you lean your board.',
         position: 'right',

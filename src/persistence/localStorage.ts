@@ -14,6 +14,7 @@
 import type { BoardSetupConfig } from '../models/BoardSetupConfig'
 import type { RiderParams } from '../components/ConfigPanel'
 import type { LeanMotion } from '../models/leanWaveforms'
+import { DEFAULT_WHEEL_WIDTH_MM } from '../models/TruckConfig'
 
 /** Current storage format version. Bump when state shape changes incompatibly. */
 const STORAGE_VERSION = 2
@@ -88,7 +89,13 @@ export function loadState(): {
     if (!isPersistedAppState(parsed)) return null
 
     return {
-      setups: parsed.setups,
+      setups: parsed.setups.map(setup => ({
+        ...setup,
+        frontTruck: {
+          ...setup.frontTruck,
+          wheelWidth: setup.frontTruck.wheelWidth ?? DEFAULT_WHEEL_WIDTH_MM,
+        },
+      })),
       riderParams: parsed.riderParams,
       activeSetupId: parsed.activeSetupId,
       steeringLeanAngleDeg: parsed.steeringLeanAngleDeg,

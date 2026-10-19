@@ -10,6 +10,7 @@ Data modeling domain.
 - All configuration state must be defined here with strict TypeScript interfaces.
 - Interfaces must be immutable in practice; updates should produce new objects.
 - Default values and presets should be defined alongside or near these models.
+- `TruckConfig.wheelWidth` is a required millimetre parameter constrained by the UI to 40-65 mm; older serialized configurations default it to 52 mm.
 - Lean motion modes implement the `LeanWaveform` interface so manual and animated lean sources, including alternate sinusoidal and trapezoidal frequencies, share one extensible contract.
 
 ## Work Guidance

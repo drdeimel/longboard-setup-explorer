@@ -8,6 +8,7 @@
 import type { BoardSetupConfig } from '../models/BoardSetupConfig'
 import type { RiderParams } from '../components/ConfigPanel'
 import type { LeanMotion } from '../models/leanWaveforms'
+import { DEFAULT_WHEEL_WIDTH_MM } from '../models/TruckConfig'
 
 /** The shape of the state encoded in the URL. */
 export interface UrlState {
@@ -44,7 +45,17 @@ export function deserializeState(encoded: string): UrlState | null {
     const parsed = JSON.parse(json)
 
     if (!isValidUrlState(parsed)) return null
-    return { ...parsed, leanMotion: parsed.leanMotion ?? 'manual' }
+    return {
+      ...parsed,
+      setups: parsed.setups.map(setup => ({
+        ...setup,
+        frontTruck: {
+          ...setup.frontTruck,
+          wheelWidth: setup.frontTruck.wheelWidth ?? DEFAULT_WHEEL_WIDTH_MM,
+        },
+      })),
+      leanMotion: parsed.leanMotion ?? 'manual',
+    }
   } catch {
     return null
   }

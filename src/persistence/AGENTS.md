@@ -11,6 +11,7 @@ State persistence domain.
 - A versioned key must be used to handle schema migrations and prevent loading corrupt or outdated state.
 - Fallback to default values must be robust and silent (or log a warning) if deserialization fails.
 - Persisted and shared state must default missing lean motion data to `manual` for older payloads.
+- Persisted and shared truck configurations must default missing `wheelWidth` to 52 mm for backward compatibility.
 
 ## Work Guidance
 - Keep serialization logic separate from UI components.

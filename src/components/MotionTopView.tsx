@@ -3,7 +3,6 @@ import type { BoardSetupConfig } from '../models/BoardSetupConfig'
 import type { KeyGeometryResult } from '../physics/keyGeometryDataSet'
 import type { BoardPose, MotionViewportMode } from '../geometry/boardMotion'
 import type { Point2D } from '../geometry/turningCenter'
-import { DISPLAY_WHEEL_WIDTH_MM } from '../physics/keyGeometryDataSet'
 import { MOTION_VIEW_SCALE_PX_PER_MM } from '../geometry/boardMotion'
 
 interface MotionTracePoint {
@@ -69,7 +68,7 @@ const MotionTopView: React.FC<MotionTopViewProps> = ({
   const frontSteerRad = ((currentGeometry?.frontSteerAngleDeg ?? 0) * Math.PI) / 180
   const rearSteerRad = -((currentGeometry?.rearSteerAngleDeg ?? 0) * Math.PI) / 180
   const halfWidth = boardWidthMm / 2
-  const halfWheelWidth = DISPLAY_WHEEL_WIDTH_MM / 2
+  const halfWheelWidth = setup.frontTruck.wheelWidth / 2
   const wheelLength = setup.frontTruck.wheelDiameter
   const wheelHalfTrack = setup.frontTruck.trackWidth / 2
 

@@ -25,7 +25,7 @@ import { boardSurfaceHeight } from '../geometry/pivotAxis'
 import { computeTruckGeometry } from '../geometry/truckGeometry'
 import { computeLeanToSteer } from '../geometry/leanToSteer'
 import { computeWheelAxleZPositions, computeWheelRimZPositions } from '../geometry/wheelRimPositions'
-import { DISPLAY_WHEEL_OFFSET_MM, DISPLAY_WHEEL_WIDTH_MM } from '../physics/keyGeometryDataSet'
+import { DISPLAY_WHEEL_OFFSET_MM } from '../physics/keyGeometryDataSet'
 import type { KeyGeometryResult } from '../physics/keyGeometryDataSet'
 import { UI_TEXT_MUTED, UI_TEXT_PRIMARY } from '../theme/uiColors'
 
@@ -189,7 +189,7 @@ const FrontView: React.FC<FrontViewProps> = ({
   ]
 
   const groundY = originY + truck.wheelDiameter / 2 * ppm
-  const wheelWidth = DISPLAY_WHEEL_WIDTH_MM * steerProjection * ppm
+  const wheelWidth = truck.wheelWidth * steerProjection * ppm
   // Match wheel indicator height to actual wheel diameter in this view.
   const wheelHeight = truck.wheelDiameter * ppm
 
@@ -201,7 +201,7 @@ const FrontView: React.FC<FrontViewProps> = ({
   const rimZ = computeWheelRimZPositions(
     truck.trackWidth - 2 * DISPLAY_WHEEL_OFFSET_MM,
     DISPLAY_WHEEL_OFFSET_MM,
-    DISPLAY_WHEEL_WIDTH_MM,
+    truck.wheelWidth,
   )
   const leftWheelCenterZ = (rimZ.leftOuterZ + rimZ.leftInnerZ) / 2
   const rightWheelCenterZ = (rimZ.rightInnerZ + rimZ.rightOuterZ) / 2

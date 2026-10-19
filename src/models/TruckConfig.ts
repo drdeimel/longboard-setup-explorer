@@ -18,6 +18,9 @@ import type { BushingConfig } from './BushingConfig'
  */
 export type TruckType = 'single-pivot' | 'dual-pivot'
 
+/** Default wheel width used when loading older saved/shared configurations. */
+export const DEFAULT_WHEEL_WIDTH_MM = 52
+
 /**
  * Full geometry and bushing configuration for a front truck.
  *
@@ -88,6 +91,9 @@ export interface TruckConfig {
    * @minimum 60
    */
   wheelDiameter: number
+
+  /** Wheel width, measured along the axle. @units mm @range 40-65 */
+  wheelWidth: number
 
   /**
    * Track width `w_track` — lateral distance between the two wheel contact

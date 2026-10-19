@@ -11,6 +11,7 @@
  */
 
 import type { BoardSetupConfig } from './BoardSetupConfig'
+import { DEFAULT_WHEEL_WIDTH_MM } from './TruckConfig'
 import { deserializeState } from '../utils/urlState'
 
 /** A library entry: a label and the share URL that defines the setup. */
@@ -64,5 +65,11 @@ export function getSetupFromLibraryEntry(entry: LibraryEntry): Omit<BoardSetupCo
 
   // Return the first setup without id, name, color (those will be assigned when instantiated)
   const { id: _id, name: _name, color: _color, ...config } = state.setups[0]
-  return config
+  return {
+    ...config,
+    frontTruck: {
+      ...config.frontTruck,
+      wheelWidth: config.frontTruck.wheelWidth ?? DEFAULT_WHEEL_WIDTH_MM,
+    },
+  }
 }

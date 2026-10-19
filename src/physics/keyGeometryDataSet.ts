@@ -43,7 +43,6 @@ import type { Vec3 } from '../math/vec3'
 
 /** Default visualization constants for the truck views. */
 export const DISPLAY_WHEEL_OFFSET_MM = 14  // Offset from axle center to wheel contact point
-export const DISPLAY_WHEEL_WIDTH_MM = 52    // Wheel width for front-view indicator
 export const DISPLAY_BOARD_HALF_WIDTH_MM = 100 // Half-width of board for visualization
 export const DISPLAY_GEOMETRY_WIDTH_MM = 200   // Default width for side view geometry box
 export const DISPLAY_BOARD_LINE_PADDING = 20 // Padding for board line in front view
