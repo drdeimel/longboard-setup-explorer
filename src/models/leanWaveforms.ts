@@ -1,6 +1,6 @@
 /** Lean motion modes and waveform implementations used by the shared lean state. */
 
-export type LeanMotion = 'manual' | 'sinusoidal' | 'sinusoidal-5x' | 'trapezoidal' | 'trapezoidal-5x'
+export type LeanMotion = 'manual' | 'mouse-pan' | 'sinusoidal' | 'sinusoidal-5x' | 'trapezoidal' | 'trapezoidal-5x'
 
 export const SINUSOIDAL_CYCLE_DURATION_S = 4
 export const SINUSOIDAL_5X_CYCLE_DURATION_S = SINUSOIDAL_CYCLE_DURATION_S / 5
@@ -76,7 +76,7 @@ const trapezoidal5xWaveform: LeanWaveform = {
   },
 }
 
-const waveforms: Record<LeanMotion, LeanWaveform> = {
+const waveforms: Record<Exclude<LeanMotion, 'mouse-pan'>, LeanWaveform> = {
   manual: manualWaveform,
   sinusoidal: sinusoidalWaveform,
   'sinusoidal-5x': sinusoidal5xWaveform,
@@ -84,6 +84,6 @@ const waveforms: Record<LeanMotion, LeanWaveform> = {
   'trapezoidal-5x': trapezoidal5xWaveform,
 }
 
-export function getLeanWaveform(motion: LeanMotion): LeanWaveform {
+export function getLeanWaveform(motion: Exclude<LeanMotion, 'mouse-pan'>): LeanWaveform {
   return waveforms[motion]
 }

@@ -611,7 +611,8 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
             label="Lean motion"
             value={leanMotion}
             options={[
-              { value: 'manual', label: 'Manual' },
+              { value: 'manual', label: 'Drag Arrow&Pendulum' },
+              { value: 'mouse-pan', label: 'Mouse/Touchpad Pan' },
               { value: 'sinusoidal', label: 'Sinusoidal' },
               { value: 'sinusoidal-5x', label: 'Sinusoidal 5x' },
               { value: 'trapezoidal', label: 'Trapezoidal' },

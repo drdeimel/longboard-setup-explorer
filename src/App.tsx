@@ -366,6 +366,7 @@ const App: React.FC = () => {
   const keyGeometryCurves = useKeyGeometryCurves(setups, riderParams)
 
   const simulationTimeRef = useRef(0)
+  const panSnapAnimationRef = useRef<number | null>(null)
   const motionInputsRef = useRef({
     steeringLeanAngleDeg,
     keyGeometryCurves,
@@ -384,6 +385,52 @@ const App: React.FC = () => {
     maxLeanAngle: riderParams.maxLeanAngle,
     viewportMode: motionViewportMode,
   }
+
+  useEffect(() => {
+    if (leanMotion !== 'mouse-pan') return
+
+    const snapToCenter = () => {
+      const startAngle = motionInputsRef.current.steeringLeanAngleDeg
+      const startedAt = performance.now()
+
+      const animateSnap = (timestamp: number) => {
+        const progress = Math.min(1, (timestamp - startedAt) / 300)
+        const easedProgress = 1 - Math.pow(1 - progress, 3)
+        setSteeringLeanAngleDeg(startAngle * (1 - easedProgress))
+        if (progress < 1) {
+          panSnapAnimationRef.current = requestAnimationFrame(animateSnap)
+        } else {
+          panSnapAnimationRef.current = null
+        }
+      }
+
+      panSnapAnimationRef.current = requestAnimationFrame(animateSnap)
+    }
+
+    const handlePan = (event: WheelEvent) => {
+      const horizontalDelta = event.deltaX !== 0 ? event.deltaX : event.shiftKey ? event.deltaY : 0
+      if (horizontalDelta === 0) return
+
+      event.preventDefault()
+      if (panSnapAnimationRef.current !== null) cancelAnimationFrame(panSnapAnimationRef.current)
+      panSnapAnimationRef.current = null
+      setSteeringLeanAngleDeg(previous => Math.max(
+        -riderParams.maxLeanAngle,
+        Math.min(riderParams.maxLeanAngle, previous + horizontalDelta * 0.0375),
+      ))
+    }
+
+    window.addEventListener('wheel', handlePan, { passive: false })
+    window.addEventListener('pointerup', snapToCenter)
+    window.addEventListener('blur', snapToCenter)
+    return () => {
+      window.removeEventListener('wheel', handlePan)
+      window.removeEventListener('pointerup', snapToCenter)
+      window.removeEventListener('blur', snapToCenter)
+      if (panSnapAnimationRef.current !== null) cancelAnimationFrame(panSnapAnimationRef.current)
+      panSnapAnimationRef.current = null
+    }
+  }, [leanMotion, riderParams.maxLeanAngle])
 
   const handleMotionViewportModeChange = useCallback((mode: MotionViewportMode) => {
     setMotionViewportMode(mode)
@@ -424,7 +471,7 @@ const App: React.FC = () => {
       simulationTimeRef.current += deltaTimeSeconds
       const inputs = motionInputsRef.current
 
-      if (inputs.leanMotion !== 'manual') {
+      if (inputs.leanMotion !== 'manual' && inputs.leanMotion !== 'mouse-pan') {
         const waveform = getLeanWaveform(inputs.leanMotion)
         setSteeringLeanAngleDeg(
           waveform.evaluate(
@@ -447,7 +494,7 @@ const App: React.FC = () => {
         icr,
         velocityMmPerSecond: boardVelocityMs * 1000,
         deltaTimeSeconds,
-        orientationCorrectionEnabled: inputs.leanMotion !== 'manual',
+        orientationCorrectionEnabled: inputs.leanMotion !== 'manual' && inputs.leanMotion !== 'mouse-pan',
       })
       motionPoseRef.current = nextPose
       setMotionPose(nextPose)

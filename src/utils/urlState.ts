@@ -88,6 +88,6 @@ function isValidUrlState(value: unknown): value is UrlState {
   if (typeof v['riderParams'] !== 'object' || v['riderParams'] === null) return false
   if (typeof v['activeSetupId'] !== 'string') return false
    if (typeof v['steeringLeanAngleDeg'] !== 'number') return false
-    if (v['leanMotion'] !== undefined && v['leanMotion'] !== 'manual' && v['leanMotion'] !== 'sinusoidal' && v['leanMotion'] !== 'sinusoidal-5x' && v['leanMotion'] !== 'trapezoidal' && v['leanMotion'] !== 'trapezoidal-5x') return false
+    if (v['leanMotion'] !== undefined && v['leanMotion'] !== 'manual' && v['leanMotion'] !== 'mouse-pan' && v['leanMotion'] !== 'sinusoidal' && v['leanMotion'] !== 'sinusoidal-5x' && v['leanMotion'] !== 'trapezoidal' && v['leanMotion'] !== 'trapezoidal-5x') return false
   return true
 }

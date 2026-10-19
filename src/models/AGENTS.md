@@ -11,6 +11,7 @@ Data modeling domain.
 - Interfaces must be immutable in practice; updates should produce new objects.
 - Default values and presets should be defined alongside or near these models.
 - `TruckConfig.wheelWidth` is a required millimetre parameter constrained by the UI to 40-65 mm; older serialized configurations default it to 52 mm.
+- `LeanMotion` includes `mouse-pan` as the input-driven mode; it is not evaluated as a waveform.
 - Lean motion modes implement the `LeanWaveform` interface so manual and animated lean sources, including alternate sinusoidal and trapezoidal frequencies, share one extensible contract.
 
 ## Work Guidance

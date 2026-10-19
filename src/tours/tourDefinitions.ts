@@ -40,7 +40,7 @@ export const TOURS: TourDefinition[] = [
         targetSelector: '[data-tour="front-view"]',
         title: 'Front View',
         description:
-          'The front view lets you visualize how the truck leans and steers. In Manual lean motion, drag the colored dot on the board to change the lean angle. The board, hanger, and wheels update as the board leans.',
+          'The front view lets you visualize how the truck leans and steers. In Drag Arrow&Pendulum mode, drag the colored dot on the board to change the lean angle. The board, hanger, and wheels update as the board leans.',
         position: 'top',
       },
       {
