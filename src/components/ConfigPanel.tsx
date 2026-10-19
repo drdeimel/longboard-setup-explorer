@@ -302,37 +302,35 @@ const ConfigPanel: React.FC<ConfigPanelProps> = ({
   return (
     <div className="flex flex-col h-full overflow-hidden bg-slate-900">
       <div className="flex-1 overflow-y-auto">
-        {/* ── Library ── */}
-        <div className="px-3 py-3 border-b border-slate-800">
-          <p className="text-xs text-slate-300 uppercase tracking-wide mb-2">Instantiate from Library:</p>
-          <div className="flex flex-wrap gap-2">
-            {LIBRARY.map(entry => {
-              const config = getSetupFromLibraryEntry(entry)
-              if (!config) return null
-              return (
-                <button
-                  key={entry.label}
-                  className="px-2 py-1 text-xs rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
-                  onClick={() => onLoadPreset(config, entry.label)}
-                >
-                  {entry.label}
-                </button>
-              )
-            })}
-          </div>
-        </div>
-
         {/* ── Setup List ── */}
         <div className="px-3 py-3 border-b border-slate-800">
           <div className="flex items-center justify-between mb-2">
             <p className="text-xs text-slate-300 uppercase tracking-wide">Setups</p>
-            <button
-              className="px-2 py-1 text-xs rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
-              onClick={handleShareClick}
-              title="Copy shareable link for current configuration"
-            >
-              {shareCopied ? '✓ Copied!' : '🔗 Share current'}
-            </button>
+            <div className="flex items-center gap-2">
+              <select
+                defaultValue=""
+                className="max-w-40 px-2 py-1 text-xs rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
+                onChange={event => {
+                  const entry = LIBRARY.find(candidate => candidate.label === event.target.value)
+                  const config = entry ? getSetupFromLibraryEntry(entry) : null
+                  if (entry && config) onLoadPreset(config, entry.label)
+                  event.currentTarget.value = ''
+                }}
+                aria-label="Instantiate setup from library"
+              >
+                <option value="">Instantiate..</option>
+                {LIBRARY.map(entry => (
+                  <option key={entry.label} value={entry.label}>{entry.label}</option>
+                ))}
+              </select>
+              <button
+                className="px-2 py-1 text-xs rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition-colors"
+                onClick={handleShareClick}
+                title="Copy shareable link for current configuration"
+              >
+                {shareCopied ? '✓ Copied!' : '🔗 Share current'}
+              </button>
+            </div>
           </div>
           <div className="space-y-1">
             {setups.map(setup => {

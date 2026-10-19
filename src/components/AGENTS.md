@@ -28,6 +28,7 @@ UI and presentation domain.
 - The motion graph viewport toggle switches between `Follow` and `Zoom-To-Fit`; the latter displays the complete currently retained trace.
 - The motion graph viewport toggle is rendered as an SVG overlay directly below the `Birds-eye Motion Trace` label.
 - The `ConfigPanel` enforces setup lifecycle rules: at least one setup must exist, deletion is disabled at 1 setup, and duplication creates a deep copy with a new auto-generated name and color.
+- The `ConfigPanel` exposes library setup instantiation through a resettable select beside `Share current`; selecting a library entry creates a setup through the existing preset callback.
 - Chart Controls expose the `Lean motion` selector and simulation play/pause control. Manual mode enables slider and front-view drag input; automatic modes drive the shared lean used by diagrams and charts. Pause freezes the shared simulation clock and motion view.
 - `TourOverlay` renders the guided tour UI with backdrop, highlight, and tooltip. Transition timing between tour stops is controlled via CSS transitions.
 - `TourSelector` provides the UI for selecting and starting available tours.
